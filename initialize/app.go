@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
+
 	"red_packet/router"
 	"red_packet/utils"
-	"sync"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/mysql"

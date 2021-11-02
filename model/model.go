@@ -1,9 +1,9 @@
 package model
 
 type Envelope struct {
-	EnvelopeId uint   `json:"envelope_id"`
-	Value      uint   `json:"value,omitempty"`
+	EnvelopeId uint64 `json:"envelope_id"`
+	Value      uint64 `json:"value,omitempty"`
 	Opened     bool   `json:"opened"`
 	SnatchTime string `json:"snatch_time"`
-	UserId     uint   `json:"-"`
+	UserId     uint64 `json:"-"`
 }
