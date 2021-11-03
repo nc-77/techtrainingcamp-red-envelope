@@ -1,8 +1,6 @@
 package api
 
 import (
-	"strconv"
-
 	"red_packet/model"
 	"red_packet/service"
 
@@ -10,10 +8,7 @@ import (
 )
 
 func Snatch(c *fiber.Ctx) error {
-	uid, err := strconv.ParseUint(c.FormValue("uid"), 10, 64)
-	if err != nil {
-		return response(c, ERRPARAM, "")
-	}
+	uid := c.FormValue("uid")
 	user := service.User(uid)
 	// 检验uid是否在黑名单中
 	if user.IsAllowed() {
@@ -58,15 +53,15 @@ func Open(c *fiber.Ctx) error {
 func GetWalletList(c *fiber.Ctx) error {
 	envelopes := []model.Envelope{
 		{
-			EnvelopeId: 1,
+			EnvelopeId: "1",
 			Value:      10,
 			Opened:     true,
-			SnatchTime: "123456",
+			SnatchTime: 123456,
 		},
 		{
-			EnvelopeId: 2,
+			EnvelopeId: "2",
 			Opened:     false,
-			SnatchTime: "123456",
+			SnatchTime: 123456,
 		},
 	}
 

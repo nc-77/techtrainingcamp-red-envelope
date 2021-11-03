@@ -5,6 +5,9 @@ go 1.17
 require (
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/gofiber/fiber/v2 v2.21.0
+	github.com/panjf2000/ants/v2 v2.4.6
+	github.com/rs/xid v1.3.0
+	github.com/sirupsen/logrus v1.8.1
 	gorm.io/driver/mysql v1.1.3
 	gorm.io/gorm v1.22.2
 )

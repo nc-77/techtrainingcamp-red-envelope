@@ -1,8 +1,10 @@
 package service
 
-import "red_packet/model"
+import (
+	"red_packet/model"
+)
 
-type User uint64
+type User string
 
 func (uid User) IsAllowed() bool {
 	// todo
@@ -24,6 +26,6 @@ func (uid User) GetEnvelope() *model.Envelope {
 	if !uid.isSnatched() {
 		return nil
 	}
-	// todo
+
 	return &model.Envelope{}
 }
