@@ -7,37 +7,42 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+var (
+	app = service.GetApp()
+)
+
 func Snatch(c *fiber.Ctx) error {
 	uid := c.FormValue("uid")
-	user := service.User(uid)
+	// 检验uid
+	if !service.CheckUid(uid) {
+		return response(c, ERRPARAM, "")
+	}
+	user := service.NewUser(uid)
 	// 检验uid是否在黑名单中
 	if user.IsAllowed() {
 		return response(c, DISABLED, "")
 	}
 	// 检验uid是否达到次数上限
-	if user.IsMaxCount() {
+	count := user.GetCount()
+	if count >= app.MaxCount {
 		return response(c, MAXCOUNT, "")
 	}
 	// 获取红包
-	envelope := user.GetEnvelope()
+	envelope := user.GetEnvelope(app.EnvelopeProducer)
 	if envelope == nil {
 		return response(c, FAILED, "")
 	}
+	// 更新userCount
+	app.UserCount.Store(uid, count+1)
+
 	// 同步更新redis todo
-	// rdb:=initialize.NewApp().RDB
+	if err := service.WriteToRedis(user, envelope, app.RDB); err != nil {
+
+	}
 
 	// 异步更新mysql todo
-	// db:=initialize.NewApp().DB
-
-	return c.JSON(fiber.Map{
-		"code": 0,
-		"msg":  "success",
-		"data": fiber.Map{
-			"envelope_id": 123,
-			"max_count":   5,
-			"cur_count":   3,
-		},
-	})
+	// db:=initialize.GetApp().DB
+	return response(c, SUCCESS, envelope)
 }
 
 func Open(c *fiber.Ctx) error {

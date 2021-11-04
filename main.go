@@ -1,15 +1,15 @@
 package main
 
 import (
-	"red_packet/initialize"
 	"red_packet/router"
+	"red_packet/service"
 
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	// 初始化App
-	app := initialize.NewApp()
+	app := service.GetApp()
 	// 连接数据库，缓存预热等操作
 	app.Run()
 	// 初始化路由
