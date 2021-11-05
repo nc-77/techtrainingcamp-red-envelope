@@ -25,7 +25,7 @@ func init() {
 	msg[FAILED] = "failed"
 }
 
-func response(c *fiber.Ctx, cod code, data interface{}) error {
+func Response(c *fiber.Ctx, cod code, data interface{}) error {
 	return c.JSON(fiber.Map{
 		"code": cod,
 		"msg":  msg[cod],

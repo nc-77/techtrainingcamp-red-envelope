@@ -15,34 +15,34 @@ func Snatch(c *fiber.Ctx) error {
 	uid := c.FormValue("uid")
 	// 检验uid
 	if !service.CheckUid(uid) {
-		return response(c, ERRPARAM, "")
+		return Response(c, ERRPARAM, "")
 	}
 	user := service.NewUser(uid)
 	// 检验uid是否在黑名单中
 	if user.IsAllowed() {
-		return response(c, DISABLED, "")
+		return Response(c, DISABLED, "")
 	}
 	// 检验uid是否达到次数上限
 	count := user.GetCount()
 	if count >= app.MaxCount {
-		return response(c, MAXCOUNT, "")
+		return Response(c, MAXCOUNT, "")
 	}
 	// 获取红包
 	envelope := user.GetEnvelope(app.EnvelopeProducer)
 	if envelope == nil {
-		return response(c, FAILED, "")
+		return Response(c, FAILED, "")
 	}
 	// 更新userCount
 	app.UserCount.Store(uid, count+1)
 
 	// 同步更新redis todo
 	if err := service.WriteToRedis(user, envelope, app.RDB); err != nil {
-
+		// 失败回滚
 	}
 
 	// 异步更新mysql todo
 	// db:=initialize.GetApp().DB
-	return response(c, SUCCESS, envelope)
+	return Response(c, SUCCESS, envelope)
 }
 
 func Open(c *fiber.Ctx) error {
