@@ -1,17 +1,21 @@
 package service
 
 import (
+	"os"
 	"testing"
-	"time"
 )
 
-func TestUser_GetEnvelope(t *testing.T) {
-	p := NewProducer(amount, size)
-	user := NewUser("123")
-	go p.Do()
-	time.Sleep(time.Second)
+func TestMain(m *testing.M) {
+	onceApp = GetApp()
+	onceApp.Run()
+	m.Run()
+	os.Exit(0)
+}
 
-	envelope := user.GetEnvelope(p)
+func TestUser_GetEnvelope(t *testing.T) {
+
+	user := NewUser("123")
+	envelope := user.GetEnvelope(onceApp.EnvelopeProducer)
 
 	if envelope == nil {
 		t.Fatal()

@@ -2,7 +2,6 @@ package service
 
 import (
 	"github.com/stretchr/testify/assert"
-	"os"
 	"sync"
 	"testing"
 )
@@ -12,12 +11,6 @@ const (
 	size   int64 = 1e3
 )
 
-func TestMain(m *testing.M) {
-	m.Run()
-
-	os.Exit(0)
-}
-
 func TestProducer_do(t *testing.T) {
 	var wg sync.WaitGroup
 	producer := NewProducer(amount, size)
@@ -26,6 +19,7 @@ func TestProducer_do(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		producer.Do()
+		close(producer.Chan)
 	}()
 
 	var sum int64
