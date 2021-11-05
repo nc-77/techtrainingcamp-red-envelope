@@ -18,13 +18,9 @@ func Snatch(c *fiber.Ctx) error {
 		return Response(c, ERRPARAM, "")
 	}
 	user := service.NewUser(uid)
-	// 检验uid是否在黑名单中
-	if user.IsAllowed() {
-		return Response(c, DISABLED, "")
-	}
+
 	// 检验uid是否达到次数上限
-	count := user.GetCount()
-	if count >= app.MaxCount {
+	if user.CurCount >= app.MaxCount {
 		return Response(c, MAXCOUNT, "")
 	}
 	// 获取红包
@@ -32,13 +28,14 @@ func Snatch(c *fiber.Ctx) error {
 	if envelope == nil {
 		return Response(c, FAILED, "")
 	}
-	// 更新userCount
-	app.UserCount.Store(uid, count+1)
-
-	// 同步更新redis todo
+	// 同步更新redis
 	if err := service.WriteToRedis(user, envelope, app.RDB); err != nil {
 		// 失败回滚
+		app.EnvelopeProducer.Add(envelope)
+		return Response(c, FAILED, "")
 	}
+	// 更新userCount
+	app.UserCount.Store(uid, user.CurCount+1)
 
 	// 异步更新mysql todo
 	// db:=initialize.GetApp().DB

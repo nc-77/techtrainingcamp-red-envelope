@@ -17,10 +17,13 @@ func InitRouter() *fiber.App {
 	v0.Use(cors.New(), logger.New())
 	v0.Use(limiter.New(
 		limiter.Config{
-			Max:        1000,
+			Max:        5,
 			Expiration: time.Second * 1,
-			LimitReached: func(ctx *fiber.Ctx) error {
-				return api.Response(ctx, api.FAILED, "")
+			KeyGenerator: func(c *fiber.Ctx) string {
+				return c.IP()
+			},
+			LimitReached: func(c *fiber.Ctx) error {
+				return api.Response(c, api.FAILED, "")
 			},
 		}))
 	v0.Post("/snatch", api.Snatch)
