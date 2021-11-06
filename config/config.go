@@ -5,8 +5,8 @@ const (
 	DefaultHost = "localhost"
 
 	DefaultMySQLPort   = "3306"
-	DefaultMySQLPasswd = "123456"
-	DefaultMySQLDB     = "test"
+	DefaultMySQLPasswd = "lvpiche"
+	DefaultMySQLDB     = "TEST"
 
 	DefaultRedisPort   = "6379"
 	DefaultRedisPasswd = ""
@@ -14,4 +14,7 @@ const (
 	DefaultMaxCount  = "10"
 	DefaultMaxAmount = "1000"
 	DefaultMaxSize   = "1000"
+
+	DefaultKafkaBrokers = "127.0.0.1:9092"
+	DefaultKafkaTopic   = "test001"
 )

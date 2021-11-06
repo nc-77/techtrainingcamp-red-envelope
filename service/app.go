@@ -23,6 +23,7 @@ type App struct {
 	MaxAmount        int64 // 红包总金额
 	MaxSize          int64 // 红包总数量
 	UserCount        sync.Map
+	KafkaProducer    *KafkaProducer
 }
 
 var (
@@ -49,6 +50,15 @@ func (app *App) Run() {
 	// 开始生产红包
 	app.EnvelopeProducer = NewProducer(app.MaxAmount, app.MaxSize)
 	go app.EnvelopeProducer.Do()
+}
+
+func (app *App) OpenKafkaProducer() {
+	kafkaBrokers := utils.GetEnv("KAFKA_ADDRS", config.DefaultKafkaBrokers)
+	brokers := utils.GetArgs(kafkaBrokers)
+	topic := utils.GetEnv("KAFKA_TOPIC", config.DefaultKafkaTopic)
+	kafkaProducer := GetKafkaProducer(topic, brokers)
+	app.KafkaProducer = &kafkaProducer
+	go app.KafkaProducer.HandleSendErr()
 }
 
 func (app *App) OpenDB() {
