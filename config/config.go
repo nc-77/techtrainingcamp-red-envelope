@@ -5,8 +5,8 @@ const (
 	DefaultHost = "localhost"
 
 	DefaultMySQLPort   = "3306"
-	DefaultMySQLPasswd = "lvpiche"
-	DefaultMySQLDB     = "TEST"
+	DefaultMySQLPasswd = "123456"
+	DefaultMySQLDB     = "test"
 
 	DefaultRedisPort   = "6379"
 	DefaultRedisPasswd = ""
