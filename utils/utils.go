@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"strings"
 )
 
 func GetEnv(env string, defaultVal string) (key string) {
@@ -9,4 +10,8 @@ func GetEnv(env string, defaultVal string) (key string) {
 		key = defaultVal
 	}
 	return
+}
+
+func GetArgs(env string) []string {
+	return strings.Split(env, ";")
 }
