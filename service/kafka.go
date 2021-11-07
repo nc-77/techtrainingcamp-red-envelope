@@ -32,7 +32,7 @@ func GetKafkaProducer(topic string, addrs []string) KafkaProducer {
 
 func (kafkaProducer *KafkaProducer) Send(msg string) {
 	kafkaProducer.producer.Input() <- &sarama.ProducerMessage{
-		Topic: kafkaProducer.topic, 
+		Topic: kafkaProducer.topic,
 		Value: sarama.StringEncoder(msg),
 	}
 }

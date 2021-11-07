@@ -15,7 +15,7 @@ func TestMain(m *testing.M) {
 func TestUser_GetEnvelope(t *testing.T) {
 
 	user := NewUser("123")
-	envelope := user.GetEnvelope(onceApp.EnvelopeProducer)
+	envelope := user.SnatchEnvelope(onceApp.EnvelopeProducer)
 
 	if envelope == nil {
 		t.Fatal()

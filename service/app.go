@@ -3,9 +3,11 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/patrickmn/go-cache"
 	"red_packet/config"
 	"strconv"
 	"sync"
+	"time"
 
 	"red_packet/utils"
 
@@ -22,7 +24,8 @@ type App struct {
 	MaxCount         int   // 每个uid最多抢到的红包数
 	MaxAmount        int64 // 红包总金额
 	MaxSize          int64 // 红包总数量
-	UserCount        sync.Map
+	UserCount        *cache.Cache
+	UserWallet       *cache.Cache
 	KafkaProducer    *KafkaProducer
 }
 
@@ -34,7 +37,10 @@ var (
 
 func GetApp() *App {
 	once.Do(func() {
-		onceApp = &App{}
+		onceApp = &App{
+			UserCount:  cache.New(5*time.Minute, 10*time.Minute),
+			UserWallet: cache.New(5*time.Minute, 10*time.Minute),
+		}
 	})
 	return onceApp
 }
@@ -78,7 +84,7 @@ func (app *App) OpenDB() {
 }
 
 func (app *App) OpenRedis() {
-	ctx := context.Background()
+
 	host := utils.GetEnv("REDIS_SERVICE_HOST", config.DefaultHost)
 	port := utils.GetEnv("REDIS_SERVICE_PORT", config.DefaultRedisPort)
 

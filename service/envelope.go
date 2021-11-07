@@ -69,8 +69,8 @@ func getRandomMoney(remainSize int64, remainMoney int64) (money int64, ok bool) 
 	return
 }
 
-// 写回红包信息以及user_count
-func WriteToRedis(user *User, envelope *model.Envelope, rdb *redis.Client) error {
+// 写回红包信息
+func WriteToRedis(envelope *model.Envelope, rdb *redis.Client) error {
 	data, err := json.Marshal(envelope)
 	if err != nil {
 		logrus.Error(err)
@@ -79,8 +79,6 @@ func WriteToRedis(user *User, envelope *model.Envelope, rdb *redis.Client) error
 	if err = rdb.HSet(ctx, envelope.UserId, envelope.EnvelopeId, data).Err(); err != nil {
 		logrus.Error(err)
 	}
-	if err = rdb.HSet(ctx, "user_count", user.Uid, user.CurCount+1).Err(); err != nil {
-		logrus.Error(err)
-	}
+
 	return err
 }
