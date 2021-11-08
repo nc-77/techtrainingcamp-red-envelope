@@ -30,7 +30,7 @@ func InitRouter() *fiber.App {
 	v0.Post("/snatch", api.Snatch)
 	v0.Post("/open", api.Open)
 	v0.Post("/get_wallet_list", cache.New(cache.Config{
-		Expiration:   time.Second * 30,
+		Expiration:   time.Second * 10,
 		CacheHeader:  "X-Cache",
 		CacheControl: true,
 		KeyGenerator: func(c *fiber.Ctx) string {
