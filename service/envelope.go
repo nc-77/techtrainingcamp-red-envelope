@@ -92,3 +92,16 @@ func WriteToRedis(envelope *model.Envelope, rdb *redis.Client) error {
 	_, err = pipe.Exec(ctx)
 	return err
 }
+
+func UpdateRedis(envelope *model.Envelope, rdb *redis.Client) error {
+	data, err := json.Marshal(envelope)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	if err = rdb.HSet(ctx, envelope.UserId, envelope.EnvelopeId, data).Err(); err != nil {
+		logrus.Error(err)
+		return err
+	}
+	return err
+}
