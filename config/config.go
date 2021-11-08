@@ -4,9 +4,10 @@ package config
 const (
 	DefaultHost = "localhost"
 
-	DefaultMySQLPort   = "3306"
-	DefaultMySQLPasswd = "123456"
-	DefaultMySQLDB     = "test"
+	DefaultMySQLPort     = "3306"
+	DefaultMySQLUserName = "root"
+	DefaultMySQLPasswd   = "123456"
+	DefaultMySQLDB       = "test"
 
 	DefaultRedisPort   = "6379"
 	DefaultRedisPasswd = ""
