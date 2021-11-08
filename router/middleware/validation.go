@@ -2,7 +2,7 @@ package middleware
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"red_packet/api"
+	"red_envelope/api"
 )
 
 func Validate() fiber.Handler {

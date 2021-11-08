@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/patrickmn/go-cache"
-	"red_packet/config"
+	"red_envelope/config"
 	"strconv"
 	"sync"
 	"time"
 
-	"red_packet/utils"
+	"red_envelope/utils"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
@@ -22,8 +22,10 @@ type App struct {
 	RDB              *redis.Client
 	EnvelopeProducer *Producer
 	MaxCount         int   // 每个uid最多抢到的红包数
-	MaxAmount        int64 // 红包总金额
-	MaxSize          int64 // 红包总数量
+	MaxAmount        int64 // 设置的红包总金额
+	MaxSize          int64 // 设置的红包总数量
+	RemainingAmount  int64 // 可发红包总金额
+	RemainingSize    int64 // 可发红包总数
 	UserCount        *cache.Cache
 	UserWallet       *cache.Cache
 	KafkaProducer    *KafkaProducer
@@ -54,7 +56,7 @@ func (app *App) Run() {
 	app.LoadConfig()
 
 	// 开始生产红包
-	app.EnvelopeProducer = NewProducer(app.MaxAmount, app.MaxSize)
+	app.EnvelopeProducer = NewProducer(app.RemainingAmount, app.RemainingSize)
 	go app.EnvelopeProducer.Do()
 }
 
@@ -71,7 +73,7 @@ func (app *App) OpenDB() {
 	host := utils.GetEnv("MYSQL_SERVICE_HOST", config.DefaultHost)
 	port := utils.GetEnv("MYSQL_SERVICE_PORT", config.DefaultMySQLPort)
 	password := utils.GetEnv("MYSQL_ROOT_PASSWORD", config.DefaultMySQLPasswd)
-	dbName := utils.GetEnv("MYSQL_DB", config.DefaultMySQLDB)
+	dbName := utils.GetEnv("MYSQL_DATABASE", config.DefaultMySQLDB)
 
 	dsn := fmt.Sprintf("root:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", password, host, port, dbName)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
@@ -87,11 +89,12 @@ func (app *App) OpenRedis() {
 
 	host := utils.GetEnv("REDIS_SERVICE_HOST", config.DefaultHost)
 	port := utils.GetEnv("REDIS_SERVICE_PORT", config.DefaultRedisPort)
+	password := utils.GetEnv("REDIS_PASSWORD", config.DefaultRedisPasswd)
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", host, port),
-		Password: config.DefaultRedisPasswd, // no password set
-		DB:       0,                         // use default DB
+		Password: password, // no password set
+		DB:       0,        // use default DB
 	})
 	if _, err := rdb.Ping(ctx).Result(); err != nil {
 		panic(err)
@@ -103,17 +106,51 @@ func (app *App) OpenRedis() {
 
 func (app *App) LoadConfig() {
 	var err error
-	amount := utils.GetEnv("AMOUNT", config.DefaultMaxAmount)
+	var curAmount, curSize int64
+	amount := utils.GetEnv("MAX_AMOUNT", config.DefaultMaxAmount)
 	if app.MaxAmount, err = strconv.ParseInt(amount, 10, 64); err != nil {
-		logrus.Fatalln("load amount failed...")
+		logrus.Fatalln("load max_amount failed...", err)
 	}
+	if curAmount, err = app.GetCurAmount(); err != nil {
+		logrus.Fatalln("load max_amount failed...", err)
+	}
+	app.RemainingAmount = app.MaxAmount - curAmount
+
 	maxCount := utils.GetEnv("MAX_COUNT", config.DefaultMaxCount)
 	if app.MaxCount, err = strconv.Atoi(maxCount); err != nil {
-		logrus.Fatalln("load max_count failed...")
+		logrus.Fatalln("load max_count failed...", err)
 	}
+
 	maxSize := utils.GetEnv("MAX_SIZE", config.DefaultMaxSize)
 	if app.MaxSize, err = strconv.ParseInt(maxSize, 10, 64); err != nil {
-		logrus.Fatalln("load max_size failed...")
+		logrus.Fatalln("load max_size failed...", err)
 	}
+	if curSize, err = app.GetCurSize(); err != nil {
+		logrus.Fatalln("load max_size failed...", err)
+	}
+	app.RemainingSize = app.MaxSize - curSize
+
 	logrus.Infoln("success load config")
+}
+
+func (app *App) GetCurAmount() (curAmount int64, err error) {
+	var val string
+	if val, err = app.RDB.Get(ctx, "cur_amount").Result(); err != nil {
+		return
+	}
+	if curAmount, err = strconv.ParseInt(val, 10, 64); err != nil {
+		return
+	}
+	return
+}
+
+func (app *App) GetCurSize() (curSize int64, err error) {
+	var val string
+	if val, err = app.RDB.Get(ctx, "cur_size").Result(); err != nil {
+		return
+	}
+	if curSize, err = strconv.ParseInt(val, 10, 64); err != nil {
+		return
+	}
+	return
 }

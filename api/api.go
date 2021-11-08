@@ -1,8 +1,8 @@
 package api
 
 import (
-	"red_packet/model"
-	"red_packet/service"
+	"red_envelope/model"
+	"red_envelope/service"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -94,4 +94,22 @@ func GetWalletList(c *fiber.Ctx) error {
 		}
 	}
 	return Response(c, SUCCESS, envelopes)
+}
+
+func GetAmount(c *fiber.Ctx) error {
+	curAmount, err := app.GetCurAmount()
+	if err != nil {
+		return Response(c, FAILED, "")
+	}
+	curSize, err := app.GetCurSize()
+	if err != nil {
+		return Response(c, FAILED, "")
+	}
+	return Response(c, SUCCESS, fiber.Map{
+		"max_count":  app.MaxCount,
+		"max_amount": app.MaxAmount,
+		"max_size":   app.MaxSize,
+		"cur_amount": curAmount,
+		"cur_size":   curSize,
+	})
 }

@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
-	"red_packet/model"
+	"red_envelope/model"
 	"testing"
 )
 

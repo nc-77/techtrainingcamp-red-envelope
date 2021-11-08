@@ -5,7 +5,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
-	"red_packet/model"
+	"red_envelope/model"
 	"sync"
 )
 
@@ -71,14 +71,24 @@ func getRandomMoney(remainSize int64, remainMoney int64) (money int64, ok bool) 
 
 // 写回红包信息
 func WriteToRedis(envelope *model.Envelope, rdb *redis.Client) error {
+	pipe := rdb.Pipeline()
 	data, err := json.Marshal(envelope)
 	if err != nil {
 		logrus.Error(err)
 		return err
 	}
-	if err = rdb.HSet(ctx, envelope.UserId, envelope.EnvelopeId, data).Err(); err != nil {
+	if err = pipe.HSet(ctx, envelope.UserId, envelope.EnvelopeId, data).Err(); err != nil {
 		logrus.Error(err)
+		return err
 	}
-
+	if err = pipe.IncrBy(ctx, "cur_amount", envelope.Value).Err(); err != nil {
+		logrus.Error(err)
+		return err
+	}
+	if err = pipe.IncrBy(ctx, "cur_size", 1).Err(); err != nil {
+		logrus.Error(err)
+		return err
+	}
+	_, err = pipe.Exec(ctx)
 	return err
 }

@@ -2,8 +2,8 @@ package service
 
 import (
 	"github.com/sirupsen/logrus"
-	"red_packet/model"
-	"red_packet/utils"
+	"red_envelope/model"
+	"red_envelope/utils"
 	"time"
 )
 

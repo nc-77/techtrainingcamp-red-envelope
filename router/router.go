@@ -5,8 +5,8 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"red_packet/api"
-	"red_packet/router/middleware"
+	"red_envelope/api"
+	"red_envelope/router/middleware"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -40,5 +40,6 @@ func InitRouter() *fiber.App {
 	}),
 		api.GetWalletList)
 
+	router.Post("/get_amount", logger.New(), api.GetAmount)
 	return router
 }

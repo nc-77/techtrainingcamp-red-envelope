@@ -1,8 +1,8 @@
 package service
 
 import (
-	"red_packet/config"
-	"red_packet/utils"
+	"red_envelope/config"
+	"red_envelope/utils"
 	"testing"
 )
 

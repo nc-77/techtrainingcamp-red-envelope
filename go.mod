@@ -1,4 +1,4 @@
-module red_packet
+module red_envelope
 
 go 1.17
 

@@ -3,7 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"os"
-	"red_packet/model"
+	"red_envelope/model"
 	"strings"
 )
 
