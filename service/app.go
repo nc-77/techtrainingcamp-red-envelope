@@ -72,10 +72,11 @@ func (app *App) OpenKafkaProducer() {
 func (app *App) OpenDB() {
 	host := utils.GetEnv("MYSQL_SERVICE_HOST", config.DefaultHost)
 	port := utils.GetEnv("MYSQL_SERVICE_PORT", config.DefaultMySQLPort)
-	password := utils.GetEnv("MYSQL_ROOT_PASSWORD", config.DefaultMySQLPasswd)
+	userName := utils.GetEnv("MYSQL_USERNAME", config.DefaultMySQLUserName)
+	password := utils.GetEnv("MYSQL_PASSWORD", config.DefaultMySQLPasswd)
 	dbName := utils.GetEnv("MYSQL_DATABASE", config.DefaultMySQLDB)
 
-	dsn := fmt.Sprintf("root:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", password, host, port, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", userName, password, host, port, dbName)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(err)
