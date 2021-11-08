@@ -9,9 +9,7 @@ import (
 
 func TestDecodeWallet(t *testing.T) {
 	envelopes := []*model.Envelope{
-		{},
-		{EnvelopeId: "1", Opened: true},
-		{EnvelopeId: "2", Value: 1},
+		{EnvelopeId: "1", Opened: true, Value: 1},
 	}
 	input := make(map[string]string)
 	for _, envelope := range envelopes {
@@ -22,5 +20,8 @@ func TestDecodeWallet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, envelopes, got)
+	for i := range envelopes {
+		assert.Equal(t, *envelopes[i], *got[i])
+	}
+
 }
