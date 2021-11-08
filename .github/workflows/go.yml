@@ -57,6 +57,8 @@ jobs:
 
       - name: Setup Redis
         uses: supercharge/redis-github-action@1.1.0
+        run:  redis-cli set cur_amount 0
+              redis-cli set cur_size 0
 
       - name: Run tests
         run:  go test -v  ./...
