@@ -7,6 +7,13 @@ import (
 	"strings"
 )
 
+func Min(a int64, b int64) int64 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func GetEnv(env string, defaultVal string) (key string) {
 	if key = os.Getenv(env); key == "" {
 		key = defaultVal

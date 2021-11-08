@@ -28,7 +28,7 @@ func init() {
 
 func Response(c *fiber.Ctx, cod Code, data interface{}) error {
 	return c.JSON(fiber.Map{
-		"Code": cod,
+		"code": cod,
 		"msg":  msg[cod],
 		"data": data,
 	})

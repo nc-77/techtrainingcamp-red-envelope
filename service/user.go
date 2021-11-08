@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/sirupsen/logrus"
+	"math/rand"
 	"red_envelope/model"
 	"red_envelope/utils"
 	"time"
@@ -63,8 +64,9 @@ func (user *User) GetWallet() (wallet []*model.Envelope, err error) {
 
 // 根据概率判断是否抢到红包
 func (user *User) isSnatched() bool {
-	// todo
-	return true
+	rand.Seed(time.Now().UnixNano())
+	n := rand.Intn(100)
+	return n <= onceApp.SnatchedPr
 }
 
 // 从Producer中按照取一个红包

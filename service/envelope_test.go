@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	amount int64 = 1e3
-	size   int64 = 1e3
+	amount int64 = 1e6
+	size   int64 = 1e6
 )
 
 func TestProducer_do(t *testing.T) {
@@ -22,6 +22,8 @@ func TestProducer_do(t *testing.T) {
 		close(producer.Chan)
 	}()
 
+	producer.MsgChan <- 1
+	producer.MsgChan <- 0
 	var sum int64
 	for envelope := range producer.Chan {
 		if envelope != nil {

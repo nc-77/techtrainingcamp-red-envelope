@@ -1,10 +1,10 @@
 package api
 
 import (
+	"github.com/gofiber/fiber/v2"
 	"red_envelope/model"
 	"red_envelope/service"
-
-	"github.com/gofiber/fiber/v2"
+	"strconv"
 )
 
 var (
@@ -96,7 +96,7 @@ func GetWalletList(c *fiber.Ctx) error {
 	return Response(c, SUCCESS, envelopes)
 }
 
-func GetAmount(c *fiber.Ctx) error {
+func GetConfig(c *fiber.Ctx) error {
 	curAmount, err := app.GetCurAmount()
 	if err != nil {
 		return Response(c, FAILED, "")
@@ -106,10 +106,62 @@ func GetAmount(c *fiber.Ctx) error {
 		return Response(c, FAILED, "")
 	}
 	return Response(c, SUCCESS, fiber.Map{
-		"max_count":  app.MaxCount,
-		"max_amount": app.MaxAmount,
-		"max_size":   app.MaxSize,
-		"cur_amount": curAmount,
-		"cur_size":   curSize,
+		"snatched_pr": app.SnatchedPr,
+		"max_count":   app.MaxCount,
+		"max_amount":  app.MaxAmount,
+		"max_size":    app.MaxSize,
+		"cur_amount":  curAmount,
+		"cur_size":    curSize,
+	})
+}
+
+func UpdateConfig(c *fiber.Ctx) error {
+	var updated, updatedAmount, updatedSize bool
+	snatchedPr := c.FormValue("snatched_pr")
+	count := c.FormValue("max_count")
+	amount := c.FormValue("amount")
+	size := c.FormValue("size")
+
+	if val, ok := service.CheckSnatchedPr(snatchedPr); ok {
+		app.SnatchedPr = val
+		updated = true
+	}
+
+	if val, err := strconv.Atoi(count); err == nil {
+		app.MaxCount = val
+		updated = true
+	}
+
+	if val, err := strconv.ParseInt(amount, 10, 64); err == nil {
+		app.MaxAmount += val
+		app.RemainingAmount += val
+		app.EnvelopeProducer.Mutex.Lock()
+		app.EnvelopeProducer.Amount += val
+		app.EnvelopeProducer.Mutex.Unlock()
+		updatedAmount = true
+		updated = true
+	}
+
+	if val, err := strconv.ParseInt(size, 10, 64); err == nil {
+		app.MaxSize += val
+		app.RemainingSize += val
+		app.EnvelopeProducer.Mutex.Lock()
+		app.EnvelopeProducer.Size += val
+		app.EnvelopeProducer.Mutex.Unlock()
+		updatedSize = true
+		updated = true
+	}
+	if updatedAmount || updatedSize {
+		app.EnvelopeProducer.MsgChan <- 1
+	}
+	if !updated {
+		return Response(c, ERRPARAM, "")
+	}
+
+	return Response(c, SUCCESS, fiber.Map{
+		"snatched_pr": app.SnatchedPr,
+		"max_count":   app.MaxCount,
+		"max_amount":  app.MaxAmount,
+		"max_size":    app.MaxSize,
 	})
 }

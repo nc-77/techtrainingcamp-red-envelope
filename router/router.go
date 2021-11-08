@@ -4,7 +4,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 	"red_envelope/api"
 	"red_envelope/router/middleware"
 	"time"
@@ -16,7 +15,7 @@ func InitRouter() *fiber.App {
 	router := fiber.New()
 
 	v0 := router.Group("/v0")
-	v0.Use(cors.New(), logger.New(), middleware.Validate())
+	v0.Use(cors.New(), middleware.Logger(), middleware.Validate())
 	v0.Use(limiter.New(
 		limiter.Config{
 			Max:        5,
@@ -40,6 +39,7 @@ func InitRouter() *fiber.App {
 	}),
 		api.GetWalletList)
 
-	router.Post("/get_amount", logger.New(), api.GetAmount)
+	router.Post("/get_config", middleware.Logger(), api.GetConfig)
+	router.Post("/config", middleware.Logger(), api.UpdateConfig)
 	return router
 }

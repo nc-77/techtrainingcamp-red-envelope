@@ -24,6 +24,7 @@ type App struct {
 	MaxCount         int   // 每个uid最多抢到的红包数
 	MaxAmount        int64 // 设置的红包总金额
 	MaxSize          int64 // 设置的红包总数量
+	SnatchedPr       int   // 抢到红包概率
 	RemainingAmount  int64 // 可发红包总金额
 	RemainingSize    int64 // 可发红包总数
 	UserCount        *cache.Cache
@@ -58,6 +59,7 @@ func (app *App) Run() {
 	// 开始生产红包
 	app.EnvelopeProducer = NewProducer(app.RemainingAmount, app.RemainingSize)
 	go app.EnvelopeProducer.Do()
+	app.EnvelopeProducer.MsgChan <- 1
 }
 
 func (app *App) OpenKafkaProducer() {
@@ -131,6 +133,12 @@ func (app *App) LoadConfig() {
 	}
 	app.RemainingSize = app.MaxSize - curSize
 
+	var ok bool
+	snatchedPr := utils.GetEnv("SNATCHED_PR", config.DefaultSnatchedPr)
+	if app.SnatchedPr, ok = CheckSnatchedPr(snatchedPr); !ok {
+		logrus.Fatalln("load snatched_pr failed...", err)
+	}
+
 	logrus.Infoln("success load config")
 }
 
@@ -152,6 +160,17 @@ func (app *App) GetCurSize() (curSize int64, err error) {
 	}
 	if curSize, err = strconv.ParseInt(val, 10, 64); err != nil {
 		return
+	}
+	return
+}
+
+func CheckSnatchedPr(snatchedPr string) (value int, ok bool) {
+	var err error
+	if value, err = strconv.Atoi(snatchedPr); err != nil {
+		return
+	}
+	if value >= 0 && value <= 100 {
+		ok = true
 	}
 	return
 }
