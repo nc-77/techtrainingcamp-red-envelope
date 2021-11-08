@@ -62,7 +62,7 @@ func Open(c *fiber.Ctx) error {
 	}
 	// 同步更新redis
 	envelope.Opened = true
-	if err = service.WriteToRedis(envelope, app.RDB); err != nil {
+	if err = service.UpdateRedis(envelope, app.RDB); err != nil {
 		return Response(c, FAILED, "")
 	}
 	// 更新缓存
