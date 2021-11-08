@@ -2,6 +2,7 @@ package service
 
 import (
 	"testing"
+	"time"
 )
 
 func TestUser_GetEnvelope(t *testing.T) {
@@ -14,4 +15,18 @@ func TestUser_GetEnvelope(t *testing.T) {
 		t.Fatal()
 	}
 	t.Log(envelope)
+}
+
+func TestUser_isSnatched(t *testing.T) {
+	user := NewUser("123")
+	sum := 100
+	snatched := 0
+	for i := 0; i < sum; i++ {
+		time.Sleep(time.Nanosecond)
+		if user.isSnatched() {
+			snatched++
+		}
+	}
+	t.Log(float64(snatched) / float64(sum))
+
 }

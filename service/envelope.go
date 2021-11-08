@@ -5,25 +5,28 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
+	"math"
 	"red_envelope/model"
+	"red_envelope/utils"
 	"sync"
 )
 
 type Producer struct {
-	Amount int64
-	Size   int64
-	MaxLen int64
-	Chan   chan *model.Envelope
-	mutex  sync.Mutex
+	Amount  int64
+	Size    int64
+	MaxLen  int64
+	Chan    chan *model.Envelope
+	MsgChan chan int // 启动消息通知
+	Mutex   sync.Mutex
 }
 
 func NewProducer(amount int64, size int64) *Producer {
 	return &Producer{
-		Amount: amount,
-		Size:   size,
-		MaxLen: size,
-		Chan:   make(chan *model.Envelope, size),
-		mutex:  sync.Mutex{},
+		Amount:  amount,
+		Size:    size,
+		Chan:    make(chan *model.Envelope, utils.Min(size, math.MaxUint16)),
+		MsgChan: make(chan int, 100),
+		Mutex:   sync.Mutex{},
 	}
 }
 
@@ -32,27 +35,37 @@ func (p *Producer) Add(envelope *model.Envelope) {
 }
 
 func (p *Producer) Do() {
-	logrus.Infof("begin producing %v envelopes with %v amount...", p.MaxLen, p.Amount)
 	for {
-		p.mutex.Lock()
-		value, ok := getRandomMoney(p.Size, p.Amount)
-		if !ok {
-			p.mutex.Unlock()
-			break
+		//fmt.Println("wait")
+		msg := <-p.MsgChan
+		if msg == 0 {
+			//fmt.Println("quit")
+			return
 		}
-		p.Size--
-		p.Amount -= value
-		p.mutex.Unlock()
-		envelope := &model.Envelope{
-			EnvelopeId: xid.New().String(),
-			Value:      value,
-			Opened:     false,
-			UserId:     "",
-		}
-		p.Chan <- envelope
-	}
+		size := p.Size
+		logrus.Infof("begin producing %v envelopes with %v amount...", p.Size, p.Amount)
+		for {
+			p.Mutex.Lock()
+			value, ok := getRandomMoney(p.Size, p.Amount)
+			if !ok {
+				p.Mutex.Unlock()
+				break
+			}
+			p.Size--
+			p.Amount -= value
+			p.Mutex.Unlock()
+			envelope := &model.Envelope{
+				EnvelopeId: xid.New().String(),
+				Value:      value,
+				Opened:     false,
+				UserId:     "",
+			}
+			p.Chan <- envelope
 
-	logrus.Infof("finish producing %v envelopes...", p.MaxLen)
+		}
+		logrus.Infof("finish producing %v envelopes... ", size)
+
+	}
 
 }
 
