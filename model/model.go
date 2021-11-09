@@ -2,7 +2,7 @@ package model
 
 type Envelope struct {
 	EnvelopeId string `json:"envelope_id"`
-	Value      int64  `json:"value,omitempty"`
+	Value      int64  `json:"value"`
 	Opened     bool   `json:"opened"`
 	SnatchTime int64  `json:"snatch_time"`
 	UserId     string `json:"user_id"`

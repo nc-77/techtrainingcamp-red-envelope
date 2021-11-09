@@ -30,7 +30,7 @@ type App struct {
 	UserCount        *cache.Cache
 	UserWallet       *cache.Cache
 	KafkaProducer    *KafkaProducer
-	UserMutex        map[string]*sync.Mutex
+	UserMutex        sync.Map
 }
 
 var (
@@ -44,7 +44,6 @@ func GetApp() *App {
 		onceApp = &App{
 			UserCount:  cache.New(5*time.Minute, 10*time.Minute),
 			UserWallet: cache.New(5*time.Minute, 10*time.Minute),
-			UserMutex:  make(map[string]*sync.Mutex),
 		}
 	})
 	return onceApp
