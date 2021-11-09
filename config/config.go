@@ -13,8 +13,8 @@ const (
 	DefaultRedisPasswd = ""
 
 	DefaultMaxCount   = "10"
-	DefaultMaxAmount  = "1000"
-	DefaultMaxSize    = "1000"
+	DefaultMaxAmount  = "10"
+	DefaultMaxSize    = "10"
 	DefaultSnatchedPr = "80" // 0-100
 
 	DefaultKafkaBrokers = "127.0.0.1:9092"

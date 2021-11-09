@@ -2,6 +2,7 @@ package api
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 	"red_envelope/model"
 	"red_envelope/service"
 	"strconv"
@@ -14,7 +15,6 @@ var (
 func Snatch(c *fiber.Ctx) error {
 	uid := c.FormValue("uid")
 	user := service.NewUser(uid)
-
 	// 检验uid是否达到次数上限
 	count, err := user.GetCount()
 	if err != nil {
@@ -22,6 +22,11 @@ func Snatch(c *fiber.Ctx) error {
 	}
 	if count >= app.MaxCount {
 		return Response(c, MAXCOUNT, "")
+	}
+	// 是否还有红包
+	if len(app.EnvelopeProducer.Chan) == 0 {
+		logrus.Info("no envelope")
+		return Response(c, FAILED, "")
 	}
 	// 获取红包
 	envelope := user.SnatchEnvelope(app.EnvelopeProducer)

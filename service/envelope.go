@@ -24,7 +24,7 @@ func NewProducer(amount int64, size int64) *Producer {
 	return &Producer{
 		Amount:  amount,
 		Size:    size,
-		Chan:    make(chan *model.Envelope, utils.Min(size, math.MaxUint16)),
+		Chan:    make(chan *model.Envelope, utils.Min(math.MaxUint16, utils.Max(math.MaxInt16, size))),
 		MsgChan: make(chan int, 100),
 		Mutex:   sync.Mutex{},
 	}
