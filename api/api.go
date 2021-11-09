@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"red_packet/model"
 	"red_packet/service"
 
@@ -38,6 +39,13 @@ func Snatch(c *fiber.Ctx) error {
 	app.UserCount.Store(uid, user.CurCount+1)
 
 	// 异步更新mysql todo
+	s, err := json.Marshal(envelope)
+	if err != nil {
+		// todo 打印错误
+		// 这个是不允许的错误，相当于不能存到数据库
+	} else {
+		app.KafkaProducer.Send(s)
+	}
 	// db:=initialize.GetApp().DB
 	return Response(c, SUCCESS, envelope)
 }
