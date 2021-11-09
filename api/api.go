@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
 	"red_envelope/model"
@@ -10,6 +11,7 @@ import (
 
 var (
 	app = service.GetApp()
+	ctx = context.Background()
 )
 
 func Snatch(c *fiber.Ctx) error {
@@ -138,24 +140,25 @@ func UpdateConfig(c *fiber.Ctx) error {
 	}
 
 	if val, err := strconv.ParseInt(amount, 10, 64); err == nil {
-		app.MaxAmount += val
-		app.RemainingAmount += val
-		app.EnvelopeProducer.Mutex.Lock()
-		app.EnvelopeProducer.Amount += val
-		app.EnvelopeProducer.Mutex.Unlock()
+		app.AddAmount(val)
 		updatedAmount = true
-		updated = true
+		if err := app.RDB.IncrBy(ctx, "max_amount", val).Err(); err != nil {
+			app.RollbackAddAmount(val)
+			updatedAmount = false
+		}
+		updated = updated || updatedAmount
 	}
 
 	if val, err := strconv.ParseInt(size, 10, 64); err == nil {
-		app.MaxSize += val
-		app.RemainingSize += val
-		app.EnvelopeProducer.Mutex.Lock()
-		app.EnvelopeProducer.Size += val
-		app.EnvelopeProducer.Mutex.Unlock()
+		app.AddSize(val)
 		updatedSize = true
-		updated = true
+		if err := app.RDB.IncrBy(ctx, "max_size", val).Err(); err != nil {
+			app.RollbackAddSize(val)
+			updatedSize = false
+		}
+		updated = updated || updatedSize
 	}
+
 	if updatedAmount || updatedSize {
 		app.EnvelopeProducer.MsgChan <- 1
 	}
