@@ -64,10 +64,16 @@ func Snatch(c *fiber.Ctx) error {
 
 func Open(c *fiber.Ctx) error {
 	var envelope *model.Envelope
+	var mutex *sync.Mutex
 	var err error
 	uid := c.FormValue("uid")
 	user := service.NewUser(uid)
-
+	defer func() {
+		mutex.Unlock()
+	}()
+	val, _ := app.UserMutex.LoadOrStore(uid, new(sync.Mutex))
+	mutex = val.(*sync.Mutex)
+	mutex.Lock()
 	if envelope, err = user.GetEnvelope(c.FormValue("envelope_id")); err != nil {
 		return Response(c, FAILED, "")
 	}
