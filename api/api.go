@@ -1,13 +1,16 @@
 package api
 
 import (
+	"encoding/json"
+
 	"context"
-	"github.com/gofiber/fiber/v2"
-	"github.com/sirupsen/logrus"
 	"red_envelope/model"
 	"red_envelope/service"
 	"strconv"
 	"sync"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -54,6 +57,13 @@ func Snatch(c *fiber.Ctx) error {
 	app.UserWallet.Delete(user.Uid)
 
 	// 异步更新mysql todo
+	s, err := json.Marshal(envelope)
+	if err != nil {
+		// todo 打印错误
+		// 这个是不允许的错误，相当于不能存到数据库
+	} else {
+		app.KafkaProducer.Send(s)
+	}
 	// db:=initialize.GetApp().DB
 	return Response(c, SUCCESS, fiber.Map{
 		"enveloped_id": envelope.EnvelopeId,

@@ -2,11 +2,13 @@ package service
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Shopify/sarama"
 )
 
 type KafkaProducer struct {
+	SendFail map[string]time.Ticker
 	topic    string
 	producer sarama.AsyncProducer
 }
@@ -25,12 +27,15 @@ func getProducer(brokers []string) sarama.AsyncProducer {
 
 func GetKafkaProducer(topic string, addrs []string) KafkaProducer {
 	return KafkaProducer{
+		make(map[string]time.Ticker),
 		topic,
 		getProducer(addrs),
 	}
 }
 
-func (kafkaProducer *KafkaProducer) Send(msg string) {
+func (kafkaProducer *KafkaProducer) Send(msg []byte) {
+	// todo 如下
+	kafkaProducer.SendFail[string(msg)] = time.Ticker{}
 	kafkaProducer.producer.Input() <- &sarama.ProducerMessage{
 		Topic: kafkaProducer.topic,
 		Value: sarama.StringEncoder(msg),
@@ -40,11 +45,27 @@ func (kafkaProducer *KafkaProducer) Send(msg string) {
 func (kafkaProducer *KafkaProducer) HandleSendErr() {
 	for {
 		select {
-		case <-kafkaProducer.producer.Successes():
-			fmt.Println("Send Ok")
+		case ok := <-kafkaProducer.producer.Successes():
+			// 这里应该有一个更稳妥的存储方案，例如Successes后给用户返回或者其他更好的解决方案
+			// 这里的逻辑应该是默认发送失败
+			encode, err := ok.Value.Encode()
+			if err != nil {
+				// todo 打印
+			} else {
+				delete(kafkaProducer.SendFail, string(encode))
+				fmt.Println("Send Ok")
+			}
 		case fail := <-kafkaProducer.producer.Errors():
 			fmt.Println("err: ", fail.Err)
-			// todo 失败后存储信息
+			// todo 失败后的逻辑
+			encode, err := fail.Msg.Value.Encode()
+			if err != nil {
+				// todo 打印
+			} else {
+				fmt.Println(encode)
+				// kafkaProducer.SendFail[string(encode)].C 开始计时或者其他，这里只是模拟一下set
+				// 进入守护线程
+			}
 		}
 	}
 }
