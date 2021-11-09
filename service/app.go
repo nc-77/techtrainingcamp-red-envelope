@@ -128,7 +128,9 @@ func (app *App) LoadConfig() {
 	}
 
 	if curAmount, err = app.GetCurAmount(); err != nil {
-		logrus.Fatalln("load max_amount failed...", err)
+		if err := app.RDB.Set(ctx, "cur_amount", 0, 0).Err(); err != nil {
+			logrus.Fatalln("load max_amount failed...", err)
+		}
 	}
 	app.RemainingAmount = app.MaxAmount - curAmount
 
@@ -153,7 +155,9 @@ func (app *App) LoadConfig() {
 	}
 
 	if curSize, err = app.GetCurSize(); err != nil {
-		logrus.Fatalln("load max_size failed...", err)
+		if err := app.RDB.Set(ctx, "cur_size", 0, 0).Err(); err != nil {
+			logrus.Fatalln("load max_size failed...", err)
+		}
 	}
 	app.RemainingSize = app.MaxSize - curSize
 
@@ -169,23 +173,23 @@ func (app *App) LoadConfig() {
 func (app *App) GetCurAmount() (curAmount int64, err error) {
 	var val string
 	if val, err = app.RDB.Get(ctx, "cur_amount").Result(); err != nil {
-		return
+		return 0, err
 	}
 	if curAmount, err = strconv.ParseInt(val, 10, 64); err != nil {
-		return
+		return 0, err
 	}
-	return
+	return curAmount, err
 }
 
 func (app *App) GetCurSize() (curSize int64, err error) {
 	var val string
 	if val, err = app.RDB.Get(ctx, "cur_size").Result(); err != nil {
-		return
+		return 0, err
 	}
 	if curSize, err = strconv.ParseInt(val, 10, 64); err != nil {
-		return
+		return 0, err
 	}
-	return
+	return curSize, err
 }
 
 func (app *App) AddAmount(val int64) {
