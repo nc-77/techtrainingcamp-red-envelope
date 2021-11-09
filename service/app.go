@@ -110,10 +110,23 @@ func (app *App) OpenRedis() {
 func (app *App) LoadConfig() {
 	var err error
 	var curAmount, curSize int64
-	amount := utils.GetEnv("MAX_AMOUNT", config.DefaultMaxAmount)
-	if app.MaxAmount, err = strconv.ParseInt(amount, 10, 64); err != nil {
+	// max_amount 先从redis中取，没有则从env中初始化
+	var maxAmount, maxSize string
+	val, err := app.RDB.Get(ctx, "max_amount").Result()
+	if err != nil {
+		logrus.Info("load max_amount from env...")
+		maxAmount = utils.GetEnv("MAX_AMOUNT", config.DefaultMaxAmount)
+		if err := app.RDB.Set(ctx, "max_amount", maxAmount, 0).Err(); err != nil {
+			logrus.Fatalln("write max_amount to redis failed...")
+		}
+	} else {
+		logrus.Info("load max_amount from redis...")
+		maxAmount = val
+	}
+	if app.MaxAmount, err = strconv.ParseInt(maxAmount, 10, 64); err != nil {
 		logrus.Fatalln("load max_amount failed...", err)
 	}
+
 	if curAmount, err = app.GetCurAmount(); err != nil {
 		logrus.Fatalln("load max_amount failed...", err)
 	}
@@ -123,11 +136,22 @@ func (app *App) LoadConfig() {
 	if app.MaxCount, err = strconv.Atoi(maxCount); err != nil {
 		logrus.Fatalln("load max_count failed...", err)
 	}
-
-	maxSize := utils.GetEnv("MAX_SIZE", config.DefaultMaxSize)
+	// max_size 先从redis中取，没有则从env中初始化
+	val, err = app.RDB.Get(ctx, "max_size").Result()
+	if err != nil {
+		logrus.Info("load max_size from env...")
+		maxSize = utils.GetEnv("MAX_SIZE", config.DefaultMaxSize)
+		if err := app.RDB.Set(ctx, "max_size", maxSize, 0).Err(); err != nil {
+			logrus.Fatalln("write max_size to redis failed...")
+		}
+	} else {
+		logrus.Info("load max_size from redis...")
+		maxSize = val
+	}
 	if app.MaxSize, err = strconv.ParseInt(maxSize, 10, 64); err != nil {
 		logrus.Fatalln("load max_size failed...", err)
 	}
+
 	if curSize, err = app.GetCurSize(); err != nil {
 		logrus.Fatalln("load max_size failed...", err)
 	}
@@ -162,6 +186,38 @@ func (app *App) GetCurSize() (curSize int64, err error) {
 		return
 	}
 	return
+}
+
+func (app *App) AddAmount(val int64) {
+	app.MaxAmount += val
+	app.RemainingAmount += val
+	app.EnvelopeProducer.Mutex.Lock()
+	app.EnvelopeProducer.Amount += val
+	app.EnvelopeProducer.Mutex.Unlock()
+}
+
+func (app *App) RollbackAddAmount(val int64) {
+	app.MaxAmount -= val
+	app.RemainingAmount -= val
+	app.EnvelopeProducer.Mutex.Lock()
+	app.EnvelopeProducer.Amount -= val
+	app.EnvelopeProducer.Mutex.Unlock()
+}
+
+func (app *App) AddSize(val int64) {
+	app.MaxSize += val
+	app.RemainingSize += val
+	app.EnvelopeProducer.Mutex.Lock()
+	app.EnvelopeProducer.Size += val
+	app.EnvelopeProducer.Mutex.Unlock()
+}
+
+func (app *App) RollbackAddSize(val int64) {
+	app.MaxSize -= val
+	app.RemainingSize -= val
+	app.EnvelopeProducer.Mutex.Lock()
+	app.EnvelopeProducer.Size -= val
+	app.EnvelopeProducer.Mutex.Unlock()
 }
 
 func CheckSnatchedPr(snatchedPr string) (value int, ok bool) {
