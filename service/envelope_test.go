@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	amount int64 = 1e8
-	size   int64 = 1e8
+	amount int64 = 1e3
+	size   int64 = 1e3
 )
 
 func TestProducer_do(t *testing.T) {
