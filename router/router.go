@@ -41,5 +41,8 @@ func InitRouter() *fiber.App {
 
 	router.Post("/get_config", middleware.Logger(), api.GetConfig)
 	router.Post("/config", middleware.Logger(), api.UpdateConfig)
+	router.Post("/ping", middleware.Logger(), func(c *fiber.Ctx) error {
+		return c.SendString("ping")
+	})
 	return router
 }
