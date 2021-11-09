@@ -3,11 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
-	"red_packet/config"
+	"github.com/patrickmn/go-cache"
+	"red_envelope/config"
 	"strconv"
 	"sync"
+	"time"
 
-	"red_packet/utils"
+	"red_envelope/utils"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
@@ -20,10 +22,15 @@ type App struct {
 	RDB              *redis.Client
 	EnvelopeProducer *Producer
 	MaxCount         int   // 每个uid最多抢到的红包数
-	MaxAmount        int64 // 红包总金额
-	MaxSize          int64 // 红包总数量
-	UserCount        sync.Map
+	MaxAmount        int64 // 设置的红包总金额
+	MaxSize          int64 // 设置的红包总数量
+	SnatchedPr       int   // 抢到红包概率
+	RemainingAmount  int64 // 可发红包总金额
+	RemainingSize    int64 // 可发红包总数
+	UserCount        *cache.Cache
+	UserWallet       *cache.Cache
 	KafkaProducer    *KafkaProducer
+	UserMutex        map[string]*sync.Mutex
 }
 
 var (
@@ -34,7 +41,11 @@ var (
 
 func GetApp() *App {
 	once.Do(func() {
-		onceApp = &App{}
+		onceApp = &App{
+			UserCount:  cache.New(5*time.Minute, 10*time.Minute),
+			UserWallet: cache.New(5*time.Minute, 10*time.Minute),
+			UserMutex:  make(map[string]*sync.Mutex),
+		}
 	})
 	return onceApp
 }
@@ -48,8 +59,9 @@ func (app *App) Run() {
 	app.LoadConfig()
 
 	// 开始生产红包
-	app.EnvelopeProducer = NewProducer(app.MaxAmount, app.MaxSize)
+	app.EnvelopeProducer = NewProducer(app.RemainingAmount, app.RemainingSize)
 	go app.EnvelopeProducer.Do()
+	app.EnvelopeProducer.MsgChan <- 1
 }
 
 func (app *App) OpenKafkaProducer() {
@@ -64,10 +76,11 @@ func (app *App) OpenKafkaProducer() {
 func (app *App) OpenDB() {
 	host := utils.GetEnv("MYSQL_SERVICE_HOST", config.DefaultHost)
 	port := utils.GetEnv("MYSQL_SERVICE_PORT", config.DefaultMySQLPort)
-	password := utils.GetEnv("MYSQL_ROOT_PASSWORD", config.DefaultMySQLPasswd)
-	dbName := utils.GetEnv("MYSQL_DB", config.DefaultMySQLDB)
+	userName := utils.GetEnv("MYSQL_USERNAME", config.DefaultMySQLUserName)
+	password := utils.GetEnv("MYSQL_PASSWORD", config.DefaultMySQLPasswd)
+	dbName := utils.GetEnv("MYSQL_DATABASE", config.DefaultMySQLDB)
 
-	dsn := fmt.Sprintf("root:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", password, host, port, dbName)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", userName, password, host, port, dbName)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(err)
@@ -78,14 +91,15 @@ func (app *App) OpenDB() {
 }
 
 func (app *App) OpenRedis() {
-	ctx := context.Background()
+
 	host := utils.GetEnv("REDIS_SERVICE_HOST", config.DefaultHost)
 	port := utils.GetEnv("REDIS_SERVICE_PORT", config.DefaultRedisPort)
+	password := utils.GetEnv("REDIS_PASSWORD", config.DefaultRedisPasswd)
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", host, port),
-		Password: config.DefaultRedisPasswd, // no password set
-		DB:       0,                         // use default DB
+		Password: password, // no password set
+		DB:       0,        // use default DB
 	})
 	if _, err := rdb.Ping(ctx).Result(); err != nil {
 		panic(err)
@@ -97,17 +111,128 @@ func (app *App) OpenRedis() {
 
 func (app *App) LoadConfig() {
 	var err error
-	amount := utils.GetEnv("AMOUNT", config.DefaultMaxAmount)
-	if app.MaxAmount, err = strconv.ParseInt(amount, 10, 64); err != nil {
-		logrus.Fatalln("load amount failed...")
+	var curAmount, curSize int64
+	// max_amount 先从redis中取，没有则从env中初始化
+	var maxAmount, maxSize string
+	val, err := app.RDB.Get(ctx, "max_amount").Result()
+	if err != nil {
+		logrus.Info("load max_amount from env...")
+		maxAmount = utils.GetEnv("MAX_AMOUNT", config.DefaultMaxAmount)
+		if err := app.RDB.Set(ctx, "max_amount", maxAmount, 0).Err(); err != nil {
+			logrus.Fatalln("write max_amount to redis failed...")
+		}
+	} else {
+		logrus.Info("load max_amount from redis...")
+		maxAmount = val
 	}
+	if app.MaxAmount, err = strconv.ParseInt(maxAmount, 10, 64); err != nil {
+		logrus.Fatalln("load max_amount failed...", err)
+	}
+
+	if curAmount, err = app.GetCurAmount(); err != nil {
+		if err := app.RDB.Set(ctx, "cur_amount", 0, 0).Err(); err != nil {
+			logrus.Fatalln("load max_amount failed...", err)
+		}
+	}
+	app.RemainingAmount = app.MaxAmount - curAmount
+
 	maxCount := utils.GetEnv("MAX_COUNT", config.DefaultMaxCount)
 	if app.MaxCount, err = strconv.Atoi(maxCount); err != nil {
-		logrus.Fatalln("load max_count failed...")
+		logrus.Fatalln("load max_count failed...", err)
 	}
-	maxSize := utils.GetEnv("MAX_SIZE", config.DefaultMaxSize)
+	// max_size 先从redis中取，没有则从env中初始化
+	val, err = app.RDB.Get(ctx, "max_size").Result()
+	if err != nil {
+		logrus.Info("load max_size from env...")
+		maxSize = utils.GetEnv("MAX_SIZE", config.DefaultMaxSize)
+		if err := app.RDB.Set(ctx, "max_size", maxSize, 0).Err(); err != nil {
+			logrus.Fatalln("write max_size to redis failed...")
+		}
+	} else {
+		logrus.Info("load max_size from redis...")
+		maxSize = val
+	}
 	if app.MaxSize, err = strconv.ParseInt(maxSize, 10, 64); err != nil {
-		logrus.Fatalln("load max_size failed...")
+		logrus.Fatalln("load max_size failed...", err)
 	}
+
+	if curSize, err = app.GetCurSize(); err != nil {
+		if err := app.RDB.Set(ctx, "cur_size", 0, 0).Err(); err != nil {
+			logrus.Fatalln("load max_size failed...", err)
+		}
+	}
+	app.RemainingSize = app.MaxSize - curSize
+
+	var ok bool
+	snatchedPr := utils.GetEnv("SNATCHED_PR", config.DefaultSnatchedPr)
+	if app.SnatchedPr, ok = CheckSnatchedPr(snatchedPr); !ok {
+		logrus.Fatalln("load snatched_pr failed...", err)
+	}
+
 	logrus.Infoln("success load config")
+}
+
+func (app *App) GetCurAmount() (curAmount int64, err error) {
+	var val string
+	if val, err = app.RDB.Get(ctx, "cur_amount").Result(); err != nil {
+		return 0, err
+	}
+	if curAmount, err = strconv.ParseInt(val, 10, 64); err != nil {
+		return 0, err
+	}
+	return curAmount, err
+}
+
+func (app *App) GetCurSize() (curSize int64, err error) {
+	var val string
+	if val, err = app.RDB.Get(ctx, "cur_size").Result(); err != nil {
+		return 0, err
+	}
+	if curSize, err = strconv.ParseInt(val, 10, 64); err != nil {
+		return 0, err
+	}
+	return curSize, err
+}
+
+func (app *App) AddAmount(val int64) {
+	app.MaxAmount += val
+	app.RemainingAmount += val
+	app.EnvelopeProducer.Mutex.Lock()
+	app.EnvelopeProducer.Amount += val
+	app.EnvelopeProducer.Mutex.Unlock()
+}
+
+func (app *App) RollbackAddAmount(val int64) {
+	app.MaxAmount -= val
+	app.RemainingAmount -= val
+	app.EnvelopeProducer.Mutex.Lock()
+	app.EnvelopeProducer.Amount -= val
+	app.EnvelopeProducer.Mutex.Unlock()
+}
+
+func (app *App) AddSize(val int64) {
+	app.MaxSize += val
+	app.RemainingSize += val
+	app.EnvelopeProducer.Mutex.Lock()
+	app.EnvelopeProducer.Size += val
+	app.EnvelopeProducer.Mutex.Unlock()
+}
+
+func (app *App) RollbackAddSize(val int64) {
+	app.MaxSize -= val
+	app.RemainingSize -= val
+	app.EnvelopeProducer.Mutex.Lock()
+	app.EnvelopeProducer.Size -= val
+	app.EnvelopeProducer.Mutex.Unlock()
+}
+
+func CheckSnatchedPr(snatchedPr string) (value int, ok bool) {
+	var err error
+	if value, err = strconv.Atoi(snatchedPr); err != nil {
+		return
+	}
+	if value >= 0 && value <= 100 {
+		ok = true
+	}
+	return
 }

@@ -1,24 +1,32 @@
 package service
 
 import (
-	"os"
 	"testing"
+	"time"
 )
 
-func TestMain(m *testing.M) {
+func TestUser_GetEnvelope(t *testing.T) {
 	onceApp = GetApp()
 	onceApp.Run()
-	m.Run()
-	os.Exit(0)
-}
-
-func TestUser_GetEnvelope(t *testing.T) {
-
 	user := NewUser("123")
-	envelope := user.GetEnvelope(onceApp.EnvelopeProducer)
+	envelope := user.SnatchEnvelope(onceApp.EnvelopeProducer)
 
 	if envelope == nil {
 		t.Fatal()
 	}
 	t.Log(envelope)
+}
+
+func TestUser_isSnatched(t *testing.T) {
+	user := NewUser("123")
+	sum := 100
+	snatched := 0
+	for i := 0; i < sum; i++ {
+		time.Sleep(time.Nanosecond)
+		if user.isSnatched() {
+			snatched++
+		}
+	}
+	t.Log(float64(snatched) / float64(sum))
+
 }

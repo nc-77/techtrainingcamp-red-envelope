@@ -5,25 +5,28 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
-	"red_packet/model"
+	"math"
+	"red_envelope/model"
+	"red_envelope/utils"
 	"sync"
 )
 
 type Producer struct {
-	Amount int64
-	Size   int64
-	MaxLen int64
-	Chan   chan *model.Envelope
-	mutex  sync.Mutex
+	Amount  int64
+	Size    int64
+	MaxLen  int64
+	Chan    chan *model.Envelope
+	MsgChan chan int // 启动消息通知
+	Mutex   sync.Mutex
 }
 
 func NewProducer(amount int64, size int64) *Producer {
 	return &Producer{
-		Amount: amount,
-		Size:   size,
-		MaxLen: size,
-		Chan:   make(chan *model.Envelope, size),
-		mutex:  sync.Mutex{},
+		Amount:  amount,
+		Size:    size,
+		Chan:    make(chan *model.Envelope, utils.Min(math.MaxUint16, utils.Max(math.MaxInt16, size))),
+		MsgChan: make(chan int, 100),
+		Mutex:   sync.Mutex{},
 	}
 }
 
@@ -32,27 +35,37 @@ func (p *Producer) Add(envelope *model.Envelope) {
 }
 
 func (p *Producer) Do() {
-	logrus.Infof("begin producing %v envelopes with %v amount...", p.MaxLen, p.Amount)
 	for {
-		p.mutex.Lock()
-		value, ok := getRandomMoney(p.Size, p.Amount)
-		if !ok {
-			p.mutex.Unlock()
-			break
+		//fmt.Println("wait")
+		msg := <-p.MsgChan
+		if msg == 0 {
+			//fmt.Println("quit")
+			return
 		}
-		p.Size--
-		p.Amount -= value
-		p.mutex.Unlock()
-		envelope := &model.Envelope{
-			EnvelopeId: xid.New().String(),
-			Value:      value,
-			Opened:     false,
-			UserId:     "",
-		}
-		p.Chan <- envelope
-	}
+		size := p.Size
+		logrus.Infof("begin producing %v envelopes with %v amount...", p.Size, p.Amount)
+		for {
+			p.Mutex.Lock()
+			value, ok := getRandomMoney(p.Size, p.Amount)
+			if !ok {
+				p.Mutex.Unlock()
+				break
+			}
+			p.Size--
+			p.Amount -= value
+			p.Mutex.Unlock()
+			envelope := &model.Envelope{
+				EnvelopeId: xid.New().String(),
+				Value:      value,
+				Opened:     false,
+				UserId:     "",
+			}
+			p.Chan <- envelope
 
-	logrus.Infof("finish producing %v envelopes...", p.MaxLen)
+		}
+		logrus.Infof("finish producing %v envelopes... ", size)
+
+	}
 
 }
 
@@ -69,8 +82,31 @@ func getRandomMoney(remainSize int64, remainMoney int64) (money int64, ok bool) 
 	return
 }
 
-// 写回红包信息以及user_count
-func WriteToRedis(user *User, envelope *model.Envelope, rdb *redis.Client) error {
+// 写回红包信息
+func WriteToRedis(envelope *model.Envelope, rdb *redis.Client) error {
+	pipe := rdb.Pipeline()
+	data, err := json.Marshal(envelope)
+	if err != nil {
+		logrus.Error(err)
+		return err
+	}
+	if err = pipe.HSet(ctx, envelope.UserId, envelope.EnvelopeId, data).Err(); err != nil {
+		logrus.Error(err)
+		return err
+	}
+	if err = pipe.IncrBy(ctx, "cur_amount", envelope.Value).Err(); err != nil {
+		logrus.Error(err)
+		return err
+	}
+	if err = pipe.IncrBy(ctx, "cur_size", 1).Err(); err != nil {
+		logrus.Error(err)
+		return err
+	}
+	_, err = pipe.Exec(ctx)
+	return err
+}
+
+func UpdateRedis(envelope *model.Envelope, rdb *redis.Client) error {
 	data, err := json.Marshal(envelope)
 	if err != nil {
 		logrus.Error(err)
@@ -78,9 +114,7 @@ func WriteToRedis(user *User, envelope *model.Envelope, rdb *redis.Client) error
 	}
 	if err = rdb.HSet(ctx, envelope.UserId, envelope.EnvelopeId, data).Err(); err != nil {
 		logrus.Error(err)
-	}
-	if err = rdb.HSet(ctx, "user_count", user.Uid, user.CurCount+1).Err(); err != nil {
-		logrus.Error(err)
+		return err
 	}
 	return err
 }

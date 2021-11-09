@@ -3,9 +3,9 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"red_packet/config"
-	"red_packet/model"
-	"red_packet/utils"
+	"red_envelope/config"
+	"red_envelope/model"
+	"red_envelope/utils"
 	"testing"
 	"time"
 )

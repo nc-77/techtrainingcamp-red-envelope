@@ -1,8 +1,8 @@
 package main
 
 import (
-	"red_packet/router"
-	"red_packet/service"
+	"red_envelope/router"
+	"red_envelope/service"
 
 	"github.com/sirupsen/logrus"
 )

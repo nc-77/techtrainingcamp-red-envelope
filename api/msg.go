@@ -2,14 +2,14 @@ package api
 
 import "github.com/gofiber/fiber/v2"
 
-type code int
+type Code int
 
 var (
-	msg map[code]string
+	msg map[Code]string
 )
 
 const (
-	SUCCESS code = iota
+	SUCCESS Code = iota
 	ERRPARAM
 	DISABLED
 	MAXCOUNT
@@ -17,15 +17,16 @@ const (
 )
 
 func init() {
-	msg = make(map[code]string)
+	msg = make(map[Code]string)
 	msg[SUCCESS] = "success"
 	msg[ERRPARAM] = "invalid parameter"
 	msg[DISABLED] = "disabled"
 	msg[MAXCOUNT] = "reach max_count"
 	msg[FAILED] = "failed"
+
 }
 
-func Response(c *fiber.Ctx, cod code, data interface{}) error {
+func Response(c *fiber.Ctx, cod Code, data interface{}) error {
 	return c.JSON(fiber.Map{
 		"code": cod,
 		"msg":  msg[cod],
