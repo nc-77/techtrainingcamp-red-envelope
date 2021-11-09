@@ -7,6 +7,7 @@ import (
 	"red_envelope/model"
 	"red_envelope/service"
 	"strconv"
+	"sync"
 )
 
 var (
@@ -17,6 +18,15 @@ var (
 func Snatch(c *fiber.Ctx) error {
 	uid := c.FormValue("uid")
 	user := service.NewUser(uid)
+
+	defer func() {
+		app.UserMutex[uid].Unlock()
+	}()
+	if _, ok := app.UserMutex[uid]; !ok {
+		app.UserMutex[uid] = new(sync.Mutex)
+	}
+	app.UserMutex[uid].Lock()
+
 	// 检验uid是否达到次数上限
 	count, err := user.GetCount()
 	if err != nil {
@@ -59,6 +69,14 @@ func Open(c *fiber.Ctx) error {
 	var err error
 	uid := c.FormValue("uid")
 	user := service.NewUser(uid)
+
+	defer func() {
+		app.UserMutex[uid].Unlock()
+	}()
+	if _, ok := app.UserMutex[uid]; !ok {
+		app.UserMutex[uid] = new(sync.Mutex)
+	}
+	app.UserMutex[uid].Lock()
 
 	if envelope, err = user.GetEnvelope(c.FormValue("envelope_id")); err != nil {
 		return Response(c, FAILED, "")
