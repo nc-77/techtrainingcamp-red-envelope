@@ -11,29 +11,32 @@ import (
 )
 
 func TestKafka_Client(t *testing.T) {
+
 	kafkaBrokers := utils.GetEnv("KAFKA_ADDRS", config.DefaultKafkaBrokers)
 	brokers := utils.GetArgs(kafkaBrokers)
 	topic := utils.GetEnv("KAFKA_TOPIC", config.DefaultKafkaTopic)
 	kafkaProducer := GetKafkaProducer(topic, brokers)
 	defer kafkaProducer.producer.Close()
-	for i := 0; i < 100; i++ {
-		time := time.Now().Unix()
+
+	sum := 100
+	for i := 0; i < sum; i++ {
+		now := time.Now().Unix()
 		tmp := model.Envelope{
-			EnvelopeId: fmt.Sprintf("test message EnvelopeId %v from kafkatest %v", i, time),
+			EnvelopeId: fmt.Sprintf("test message EnvelopeId %v from kafkatest %v", i, now),
 			Value:      0,
 			Opened:     false,
-			SnatchTime: time,
-			UserId:     fmt.Sprintf("test message UserId %v from kafkatest %v", i, time),
+			SnatchTime: now,
+			UserId:     fmt.Sprintf("test message UserId %v from kafkatest %v", i, now),
 		}
 		encode, _ := json.Marshal(tmp)
 		kafkaProducer.Send(encode)
 	}
-	time.Sleep(5 * time.Second)
-	for i := 0; i < 100; i++ {
-		select {
-		case <-kafkaProducer.producer.Successes():
-		case err := <-kafkaProducer.producer.Errors():
-			panic(err.Error)
-		}
+	select {
+	case err := <-kafkaProducer.producer.Errors():
+		t.Log(err.Msg.Value)
+		t.Fatal(err.Error())
+	case <-time.After(time.Second * 1):
+		break
 	}
+
 }

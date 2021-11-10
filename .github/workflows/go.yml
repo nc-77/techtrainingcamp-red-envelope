@@ -59,6 +59,9 @@ jobs:
       - name: Setup Redis
         uses: shogo82148/actions-setup-redis@v1
 
+      - name: Start Bitname Kafka
+        uses: bbcCorp/kafka-actions@v1
+
       - name: Run tests
         run:  |
           redis-cli set cur_amount 0

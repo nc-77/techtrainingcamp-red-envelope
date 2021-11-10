@@ -36,8 +36,7 @@ func InitRouter() *fiber.App {
 		KeyGenerator: func(c *fiber.Ctx) string {
 			return c.FormValue("uid")
 		},
-	}),
-		api.GetWalletList)
+	}), api.GetWalletList)
 
 	router.Post("/get_config", middleware.Logger(), api.GetConfig)
 	router.Post("/config", middleware.Logger(), api.UpdateConfig)

@@ -15,6 +15,11 @@ func TestApp_OpenRedis(t *testing.T) {
 	app.OpenRedis()
 }
 
+func TestApp_OpenKafkaProducer(t *testing.T) {
+	app := GetApp()
+	app.OpenKafkaProducer()
+}
+
 func TestCheckSnatchedPr(t *testing.T) {
 	value, ok := CheckSnatchedPr("80")
 	assert.Equal(t, 80, value)

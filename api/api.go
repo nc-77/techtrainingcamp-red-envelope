@@ -1,9 +1,8 @@
 package api
 
 import (
-	"encoding/json"
-
 	"context"
+	"encoding/json"
 	"red_envelope/model"
 	"red_envelope/service"
 	"strconv"
@@ -56,15 +55,15 @@ func Snatch(c *fiber.Ctx) error {
 	app.UserCount.SetDefault(user.Uid, count+1)
 	app.UserWallet.Delete(user.Uid)
 
-	// 异步更新mysql todo
+	// kafka异步更新mysql
 	s, err := json.Marshal(envelope)
 	if err != nil {
-		// todo 打印错误
+		logrus.Error(err)
 		// 这个是不允许的错误，相当于不能存到数据库
 	} else {
 		app.KafkaProducer.Send(s)
 	}
-	// db:=initialize.GetApp().DB
+
 	return Response(c, SUCCESS, fiber.Map{
 		"enveloped_id": envelope.EnvelopeId,
 		"max_count":    app.MaxCount,

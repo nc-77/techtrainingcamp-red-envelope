@@ -53,7 +53,8 @@ func (app *App) Run() {
 	// 数据库连接
 	app.OpenDB()
 	app.OpenRedis()
-
+	app.OpenKafkaProducer()
+	go app.KafkaProducer.HandleSendErr()
 	// 参数配置加载
 	app.LoadConfig()
 
@@ -69,7 +70,7 @@ func (app *App) OpenKafkaProducer() {
 	topic := utils.GetEnv("KAFKA_TOPIC", config.DefaultKafkaTopic)
 	kafkaProducer := GetKafkaProducer(topic, brokers)
 	app.KafkaProducer = &kafkaProducer
-	go app.KafkaProducer.HandleSendErr()
+	logrus.Infoln("success connect to Kafka")
 }
 
 func (app *App) OpenDB() {
