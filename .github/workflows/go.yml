@@ -59,11 +59,15 @@ jobs:
       - name: Setup Redis
         uses: shogo82148/actions-setup-redis@v1
 
-      - name: Start Bitname Kafka
-        uses: bbcCorp/kafka-actions@v1
+      - name: Start Kafka
+        uses: 280780363/kafka-action@v1.0
+        with:
+          kafka version: "latest" # Optional, kafka version
+          zookeeper version: "latest" # Optional, zookeeper version
+          kafka port: 9092 # Optional, kafka port
+          zookeeper port: 2181 # Optional, zookeeper port
+          auto create topic: "true" # Optional, auto create kafka topic
 
       - name: Run tests
         run:  |
-          redis-cli set cur_amount 0
-          redis-cli set cur_size 0
           go test -v  ./...
