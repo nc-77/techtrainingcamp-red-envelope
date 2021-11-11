@@ -3,10 +3,11 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"red_envelope/model"
-	"red_envelope/service"
 	"strconv"
 	"sync"
+
+	"red_envelope/model"
+	"red_envelope/service"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"

@@ -2,13 +2,15 @@ package service
 
 import (
 	"encoding/json"
+	"math"
+	"sync"
+
+	"red_envelope/model"
+	"red_envelope/utils"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
-	"math"
-	"red_envelope/model"
-	"red_envelope/utils"
-	"sync"
 )
 
 type Producer struct {

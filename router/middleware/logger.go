@@ -7,6 +7,6 @@ import (
 
 func Logger() fiber.Handler {
 	return logger2.New(logger2.Config{
-		TimeZone: "Asia/ShangHai",
+		TimeZone: "Asia/Shanghai",
 	})
 }

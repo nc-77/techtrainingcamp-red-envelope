@@ -37,5 +37,5 @@ const (
 	DefaultSnatchedPr = "80" // 0-100
 
 	DefaultKafkaBrokers = "127.0.0.1:9092"
-	DefaultKafkaTopic   = "test010"
+	DefaultKafkaTopic   = "test100"
 )

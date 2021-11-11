@@ -2,10 +2,12 @@ package service
 
 import (
 	"encoding/json"
+
+	"red_envelope/model"
+
 	"github.com/Shopify/sarama"
 	"github.com/go-redis/redis/v8"
 	"github.com/sirupsen/logrus"
-	"red_envelope/model"
 )
 
 type KafkaProducer struct {
