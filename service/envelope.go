@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"math"
+	"math/rand"
 	"sync"
 
 	"red_envelope/model"
@@ -76,7 +77,7 @@ func getRandomMoney(remainSize int64, remainMoney int64) (money int64, ok bool) 
 	if remainSize <= 0 || remainMoney <= 0 {
 		return
 	}
-	money = remainMoney / remainSize
+	money = rand.Int63n(remainMoney*2/remainSize-1) + 1
 	if money <= 0 {
 		return
 	}
