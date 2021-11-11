@@ -61,9 +61,9 @@ func (app *App) Run() {
 }
 
 func (app *App) OpenKafkaProducer() {
-	kafkaBrokers := utils.GetEnv("KAFKA_ADDRS", config.DefaultKafkaBrokers)
+	kafkaBrokers := utils.GetEnv("KAFKA_BROKERS", config.DefaultKafkaBrokers)
 	brokers := utils.GetArgs(kafkaBrokers)
-	topic := utils.GetEnv("KAFKA_TOPIC", config.DefaultKafkaTopic)
+	topic := utils.GetEnv("KAFKA_TOPICS", config.DefaultKafkaTopic)
 	kafkaProducer := GetKafkaProducer(topic, brokers)
 	app.KafkaProducer = &kafkaProducer
 	logrus.Infoln("success connect to Kafka")
