@@ -12,7 +12,7 @@ import (
 func Limiter() fiber.Handler {
 	return limiter.New(
 		limiter.Config{
-			Max:        5,
+			Max:        1,
 			Expiration: time.Second * 1,
 			KeyGenerator: func(c *fiber.Ctx) string {
 				return c.FormValue("uid")
