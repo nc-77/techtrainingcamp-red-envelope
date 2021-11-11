@@ -1,11 +1,13 @@
 package service
 
 import (
-	"github.com/sirupsen/logrus"
 	"math/rand"
+	"time"
+
 	"red_envelope/model"
 	"red_envelope/utils"
-	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type User struct {

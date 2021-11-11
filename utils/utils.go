@@ -3,8 +3,9 @@ package utils
 import (
 	"encoding/json"
 	"os"
-	"red_envelope/model"
 	"strings"
+
+	"red_envelope/model"
 )
 
 func Max(a int64, b int64) int64 {

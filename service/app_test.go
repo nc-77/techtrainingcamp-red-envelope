@@ -5,14 +5,14 @@ import (
 	"testing"
 )
 
-func TestApp_OpenDB(t *testing.T) {
-	app := GetApp()
-	app.OpenDB()
-}
-
 func TestApp_OpenRedis(t *testing.T) {
 	app := GetApp()
 	app.OpenRedis()
+}
+
+func TestApp_OpenKafkaProducer(t *testing.T) {
+	app := GetApp()
+	app.OpenKafkaProducer()
 }
 
 func TestCheckSnatchedPr(t *testing.T) {

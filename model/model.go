@@ -14,3 +14,14 @@ type RespEnvelope struct {
 	Opened     bool   `json:"opened"`
 	SnatchTime int64  `json:"snatch_time"`
 }
+
+func (e *Envelope) ToMap() map[string]interface{} {
+	ret := map[string]interface{}{
+		"envelope_id": e.EnvelopeId,
+		"value":       e.Value,
+		"opened":      e.Opened,
+		"snatch_time": e.SnatchTime,
+		"user_id":     e.UserId,
+	}
+	return ret
+}

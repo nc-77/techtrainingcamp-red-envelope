@@ -3,22 +3,19 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/patrickmn/go-cache"
-	"red_envelope/config"
 	"strconv"
 	"sync"
 	"time"
 
+	"red_envelope/config"
 	"red_envelope/utils"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 )
 
 type App struct {
-	DB               *gorm.DB
 	RDB              *redis.Client
 	EnvelopeProducer *Producer
 	MaxCount         int   // 每个uid最多抢到的红包数
@@ -51,9 +48,9 @@ func GetApp() *App {
 
 func (app *App) Run() {
 	// 数据库连接
-	app.OpenDB()
 	app.OpenRedis()
-
+	app.OpenKafkaProducer()
+	go app.KafkaProducer.HandleSendErr()
 	// 参数配置加载
 	app.LoadConfig()
 
@@ -69,24 +66,7 @@ func (app *App) OpenKafkaProducer() {
 	topic := utils.GetEnv("KAFKA_TOPIC", config.DefaultKafkaTopic)
 	kafkaProducer := GetKafkaProducer(topic, brokers)
 	app.KafkaProducer = &kafkaProducer
-	go app.KafkaProducer.HandleSendErr()
-}
-
-func (app *App) OpenDB() {
-	host := utils.GetEnv("MYSQL_SERVICE_HOST", config.DefaultHost)
-	port := utils.GetEnv("MYSQL_SERVICE_PORT", config.DefaultMySQLPort)
-	userName := utils.GetEnv("MYSQL_USERNAME", config.DefaultMySQLUserName)
-	password := utils.GetEnv("MYSQL_PASSWORD", config.DefaultMySQLPasswd)
-	dbName := utils.GetEnv("MYSQL_DATABASE", config.DefaultMySQLDB)
-
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", userName, password, host, port, dbName)
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
-
-	app.DB = db
-	logrus.Infoln("success connect to mysql")
+	logrus.Infoln("success connect to Kafka")
 }
 
 func (app *App) OpenRedis() {

@@ -2,13 +2,17 @@ package service
 
 import (
 	"encoding/json"
+	"math"
+	"math/rand"
+	"sync"
+	"time"
+
+	"red_envelope/model"
+	"red_envelope/utils"
+
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
-	"math"
-	"red_envelope/model"
-	"red_envelope/utils"
-	"sync"
 )
 
 type Producer struct {
@@ -69,15 +73,15 @@ func (p *Producer) Do() {
 
 }
 
-// todo
+// 二倍均值法随机分配红包
 func getRandomMoney(remainSize int64, remainMoney int64) (money int64, ok bool) {
 	if remainSize <= 0 || remainMoney <= 0 {
 		return
 	}
-	money = remainMoney / remainSize
-	if money <= 0 {
-		return
-	}
+	n := utils.Max(remainMoney*2/remainSize-1, 1)
+	rand.Seed(time.Now().UnixNano())
+	money = utils.Min(rand.Int63n(n)+1, remainMoney)
+
 	ok = true
 	return
 }
