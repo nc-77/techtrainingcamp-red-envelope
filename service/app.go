@@ -15,6 +15,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+
+
 type App struct {
 	RDB              *redis.Client
 	EnvelopeProducer *Producer
