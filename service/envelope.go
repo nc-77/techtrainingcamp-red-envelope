@@ -24,6 +24,37 @@ type Producer struct {
 	Mutex   sync.Mutex
 }
 
+var randomMoney []int64
+
+const randomMoneyBit = 13
+const randomMoneyLen = 1 << randomMoneyBit
+
+// todo 按照config来生成EnvelopeDistribute数组
+// 举个例子配置里将红包的分成5个等级
+// 比分占比15 40 30 10 5
+// 下限和上限为(1~30) (30~200) (200~1000) (1000~5000) (5000~10000)
+type EnvelopeDistribute struct {
+	Probability float64
+	UpperLimit  int64
+	LowerLimit  int64
+}
+
+// 更改配置则重新调用,randomMoney更新根据EnvelopeDistribute，在开启服务前一定要调用
+func InitRandomMoney(envelopeDistribute []EnvelopeDistribute) {
+	res := make([]int64, randomMoneyLen)
+	index := 0
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for _, ele := range envelopeDistribute {
+		for i := float64(randomMoneyLen) * ele.Probability; i > 0 && index < randomMoneyLen; i-- {
+			res[index] = ele.LowerLimit + r.Int63n(ele.UpperLimit-ele.LowerLimit)
+		}
+	}
+	for ; index < randomMoneyLen; index++ {
+		res[index] = 1
+	}
+	randomMoney = res
+}
+
 func NewProducer(amount int64, size int64) *Producer {
 	return &Producer{
 		Amount:  amount,
@@ -50,7 +81,8 @@ func (p *Producer) Do() {
 		logrus.Infof("begin producing %v envelopes with %v amount...", p.Size, p.Amount)
 		for {
 			p.Mutex.Lock()
-			value, ok := getRandomMoney(p.Size, p.Amount)
+			// todo add envelope_id
+			value, ok := getRandomMoney(p.Size, p.Amount, "c6576gjbu3ifgt3emvrg")
 			if !ok {
 				p.Mutex.Unlock()
 				break
@@ -73,15 +105,21 @@ func (p *Producer) Do() {
 
 }
 
-// 二倍均值法随机分配红包
-func getRandomMoney(remainSize int64, remainMoney int64) (money int64, ok bool) {
+func envelopeIdToIndex(envelopeId string) int {
+	index := 0
+	for i := 0; i < randomMoneyBit; i++ {
+		index ^= (int(envelopeId[i]) & 1) << i
+	}
+	return index
+}
+
+// 二倍均值法随机分配红包 -> 打表预分配，靠envelope_id来拿
+func getRandomMoney(remainSize int64, remainMoney int64, envelopeId string) (money int64, ok bool) {
 	if remainSize <= 0 || remainMoney <= 0 {
 		return
 	}
-	n := utils.Max(remainMoney*2/remainSize-1, 1)
-	rand.Seed(time.Now().UnixNano())
-	money = utils.Min(rand.Int63n(n)+1, remainMoney)
-
+	index := envelopeIdToIndex(envelopeId)
+	money = utils.Min(randomMoney[index], remainMoney)
 	ok = true
 	return
 }
