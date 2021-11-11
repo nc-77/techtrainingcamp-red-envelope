@@ -98,7 +98,15 @@ func Open(c *fiber.Ctx) error {
 	}
 	// 更新缓存
 	app.UserWallet.Delete(user.Uid)
-	// 异步更新Mysql todo
+
+	// kafka异步更新mysql
+	s, err := json.Marshal(envelope)
+	if err != nil {
+		logrus.Error(err)
+		// 这个是不允许的错误，相当于不能存到数据库
+	} else {
+		app.KafkaProducer.Send(s)
+	}
 
 	return Response(c, SUCCESS, fiber.Map{
 		"value": envelope.Value,
