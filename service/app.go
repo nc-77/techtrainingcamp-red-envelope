@@ -30,6 +30,8 @@ type App struct {
 	KafkaProducer    *KafkaProducer
 	UserMutex        sync.Map
 	TokenLimiter     *rate.Limiter
+	UserAuth         string // config接口用户名
+	PasswdAuth       string // config接口密码
 }
 
 var (
@@ -150,6 +152,10 @@ func (app *App) LoadConfig() {
 	if app.SnatchedPr, ok = CheckSnatchedPr(snatchedPr); !ok {
 		logrus.Fatalln("load snatched_pr failed...", err)
 	}
+
+	// 加载管理员用户密码
+	app.UserAuth = utils.GetEnv("USER_AUTH", config.DefaultUserAuth)
+	app.PasswdAuth = utils.GetEnv("PASSWORD_AUTH", config.DefaultPasswdAuth)
 
 	logrus.Infoln("success load config")
 }

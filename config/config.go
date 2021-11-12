@@ -38,4 +38,7 @@ const (
 
 	DefaultKafkaBrokers = "127.0.0.1:9092"
 	DefaultKafkaTopic   = "test100"
+
+	DefaultUserAuth   = "admin"
+	DefaultPasswdAuth = "admin"
 )

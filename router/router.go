@@ -9,8 +9,13 @@ import (
 
 func InitRouter() *fiber.App {
 	router := fiber.New()
-	//router.Use(pprof.New())
+	// router.Use(pprof.New())
 	router.Use(middleware.TokenLimiter())
+
+	// ping test
+	router.Post("/ping", middleware.Logger(), func(c *fiber.Ctx) error {
+		return c.SendString("ping")
+	})
 
 	v0 := router.Group("/v0")
 	v0.Use(middleware.Validate(), middleware.Limiter())
@@ -18,10 +23,8 @@ func InitRouter() *fiber.App {
 	v0.Post("/open", api.Open)
 	v0.Post("/get_wallet_list", middleware.Cache(), api.GetWalletList)
 
-	router.Post("/get_config", middleware.Logger(), api.GetConfig)
-	router.Post("/config", middleware.Logger(), api.UpdateConfig)
-	router.Post("/ping", middleware.Logger(), func(c *fiber.Ctx) error {
-		return c.SendString("ping")
-	})
+	router.Post("/get_config", middleware.Logger(), middleware.Auth(), api.GetConfig)
+	router.Post("/config", middleware.Logger(), middleware.Auth(), api.UpdateConfig)
+
 	return router
 }
