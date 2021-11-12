@@ -15,6 +15,7 @@ const (
 	MAXCOUNT
 	FAILED
 	TOOFAST
+	UNAUTHORIZED
 )
 
 func init() {
@@ -25,6 +26,7 @@ func init() {
 	msg[MAXCOUNT] = "reach max_count"
 	msg[FAILED] = "failed"
 	msg[TOOFAST] = "this user request too fast"
+	msg[UNAUTHORIZED] = "unauthorized"
 }
 
 func Response(c *fiber.Ctx, cod Code, data interface{}) error {
