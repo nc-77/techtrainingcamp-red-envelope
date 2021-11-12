@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"golang.org/x/time/rate"
 	"strconv"
 	"sync"
 	"time"
@@ -28,6 +29,7 @@ type App struct {
 	UserWallet       *cache.Cache
 	KafkaProducer    *KafkaProducer
 	UserMutex        sync.Map
+	TokenLimiter     *rate.Limiter
 }
 
 var (
@@ -39,8 +41,9 @@ var (
 func GetApp() *App {
 	once.Do(func() {
 		onceApp = &App{
-			UserCount:  cache.New(5*time.Minute, 10*time.Minute),
-			UserWallet: cache.New(5*time.Minute, 10*time.Minute),
+			UserCount:    cache.New(5*time.Minute, 10*time.Minute),
+			UserWallet:   cache.New(5*time.Minute, 10*time.Minute),
+			TokenLimiter: rate.NewLimiter(1e5, 1e5),
 		}
 	})
 	return onceApp

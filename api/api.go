@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"strconv"
+	"sort"
 	"sync"
 
 	"red_envelope/model"
@@ -120,6 +120,7 @@ func GetWalletList(c *fiber.Ctx) error {
 	if err != nil {
 		return Response(c, FAILED, "")
 	}
+	var amount int64
 	// 隐藏value字段
 	envelopes := make([]model.RespEnvelope, len(wallet))
 	for i := range wallet {
@@ -130,9 +131,16 @@ func GetWalletList(c *fiber.Ctx) error {
 		}
 		if envelopes[i].Opened {
 			envelopes[i].Value = wallet[i].Value
+			amount += envelopes[i].Value
 		}
 	}
-	return Response(c, SUCCESS, envelopes)
+	sort.Slice(envelopes, func(i, j int) bool {
+		return envelopes[i].SnatchTime > envelopes[j].SnatchTime
+	})
+	return Response(c, SUCCESS, fiber.Map{
+		"amount":        amount,
+		"envelope_list": envelopes,
+	})
 }
 
 func GetConfig(c *fiber.Ctx) error {
@@ -156,22 +164,22 @@ func GetConfig(c *fiber.Ctx) error {
 
 func UpdateConfig(c *fiber.Ctx) error {
 	var updated, updatedAmount, updatedSize bool
-	snatchedPr := c.FormValue("snatched_pr")
-	count := c.FormValue("max_count")
-	amount := c.FormValue("amount")
-	size := c.FormValue("size")
+	var config model.Config
+	if err := c.BodyParser(&config); err != nil {
+		return Response(c, ERRPARAM, "")
+	}
 
-	if val, ok := service.CheckSnatchedPr(snatchedPr); ok {
-		app.SnatchedPr = val
+	if config.SnatchedPr > 0 && config.SnatchedPr <= 100 {
+		app.SnatchedPr = config.SnatchedPr
 		updated = true
 	}
 
-	if val, err := strconv.Atoi(count); err == nil {
-		app.MaxCount = val
+	if config.MaxCount != 0 {
+		app.MaxCount = config.MaxCount
 		updated = true
 	}
 
-	if val, err := strconv.ParseInt(amount, 10, 64); err == nil {
+	if val := config.MaxAmount; val != 0 {
 		app.AddAmount(val)
 		updatedAmount = true
 		if err := app.RDB.IncrBy(ctx, "max_amount", val).Err(); err != nil {
@@ -181,7 +189,7 @@ func UpdateConfig(c *fiber.Ctx) error {
 		updated = updated || updatedAmount
 	}
 
-	if val, err := strconv.ParseInt(size, 10, 64); err == nil {
+	if val := config.MaxSize; val != 0 {
 		app.AddSize(val)
 		updatedSize = true
 		if err := app.RDB.IncrBy(ctx, "max_size", val).Err(); err != nil {
