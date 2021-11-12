@@ -2,9 +2,11 @@ package utils
 
 import (
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
-	"red_envelope/model"
 	"testing"
+
+	"red_envelope/model"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDecodeWallet(t *testing.T) {

@@ -2,17 +2,18 @@ package service
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"math"
 	"math/rand"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const (
-	amount int64 = 100
-	size   int64 = 100
+	amount int64 = 1e3
+	size   int64 = 1e3
 )
 
 func TestProducer_do(t *testing.T) {

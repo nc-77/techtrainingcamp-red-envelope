@@ -11,7 +11,7 @@ import (
 )
 
 type User struct {
-	Uid string
+	Uid string `json:"uid"`
 }
 
 func NewUser(uid string) *User {
