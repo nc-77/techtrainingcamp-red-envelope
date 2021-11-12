@@ -1,12 +1,12 @@
 package router
 
 import (
-	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"red_envelope/api"
 	"red_envelope/router/middleware"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/pprof"
 )
 
 func InitRouter() *fiber.App {

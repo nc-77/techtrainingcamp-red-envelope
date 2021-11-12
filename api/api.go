@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -132,6 +133,9 @@ func GetWalletList(c *fiber.Ctx) error {
 			envelopes[i].Value = wallet[i].Value
 		}
 	}
+	sort.Slice(envelopes, func(i, j int) bool {
+		return envelopes[i].SnatchTime > envelopes[j].SnatchTime
+	})
 	return Response(c, SUCCESS, envelopes)
 }
 
