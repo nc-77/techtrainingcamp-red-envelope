@@ -15,6 +15,13 @@ type RespEnvelope struct {
 	SnatchTime int64  `json:"snatch_time"`
 }
 
+type Config struct {
+	SnatchedPr int   `json:"snatched_pr"`
+	MaxCount   int   `json:"max_count"`
+	MaxAmount  int64 `json:"max_amount"`
+	MaxSize    int64 `json:"max_size"`
+}
+
 func (e *Envelope) ToMap() map[string]interface{} {
 	ret := map[string]interface{}{
 		"envelope_id": e.EnvelopeId,

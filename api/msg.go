@@ -11,19 +11,20 @@ var (
 const (
 	SUCCESS Code = iota
 	ERRPARAM
-	DISABLED
+	LIMITED
 	MAXCOUNT
 	FAILED
+	TOOFAST
 )
 
 func init() {
 	msg = make(map[Code]string)
 	msg[SUCCESS] = "success"
 	msg[ERRPARAM] = "invalid parameter"
-	msg[DISABLED] = "disabled"
+	msg[LIMITED] = "limited"
 	msg[MAXCOUNT] = "reach max_count"
 	msg[FAILED] = "failed"
-
+	msg[TOOFAST] = "this user request too fast"
 }
 
 func Response(c *fiber.Ctx, cod Code, data interface{}) error {
