@@ -33,6 +33,7 @@ const randomMoneyLen = 1 << randomMoneyBit
 // 举个例子配置里将红包的分成5个等级
 // 比分占比15 40 30 10 5
 // 下限和上限为(1~30) (30~200) (200~1000) (1000~5000) (5000~10000)
+// 为了让金额尽量用完，配置的期望要等于总金额
 type EnvelopeDistribute struct {
 	Probability float64
 	UpperLimit  int64
@@ -41,17 +42,21 @@ type EnvelopeDistribute struct {
 
 // 更改配置则重新调用,randomMoney更新根据EnvelopeDistribute，在开启服务前一定要调用
 func InitRandomMoney(envelopeDistribute []EnvelopeDistribute) {
+	if len(envelopeDistribute) < 1 {
+		logrus.Errorln("len(envelopeDistribute) < 1")
+	}
 	res := make([]int64, randomMoneyLen)
 	index := 0
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for _, ele := range envelopeDistribute {
 		for i := float64(randomMoneyLen) * ele.Probability; i > 0 && index < randomMoneyLen; i-- {
-			res[index] = ele.LowerLimit + r.Int63n(ele.UpperLimit-ele.LowerLimit)
+			res[index] = ele.LowerLimit + r.Int63n(ele.UpperLimit-ele.LowerLimit+1)
 		}
 	}
 	for ; index < randomMoneyLen; index++ {
-		res[index] = 1
+		res[index] = envelopeDistribute[0].LowerLimit
 	}
+	rand.Shuffle(len(res), func(i, j int) { res[i], res[j] = res[j], res[i] })
 	randomMoney = res
 }
 
@@ -81,8 +86,8 @@ func (p *Producer) Do() {
 		logrus.Infof("begin producing %v envelopes with %v amount...", p.Size, p.Amount)
 		for {
 			p.Mutex.Lock()
-			// todo add envelope_id
-			value, ok := getRandomMoney(p.Size, p.Amount, "c6576gjbu3ifgt3emvrg")
+			envelopeId := xid.New().String()
+			value, ok := getRandomMoney(p.Size, p.Amount, envelopeId)
 			if !ok {
 				p.Mutex.Unlock()
 				break
@@ -91,7 +96,7 @@ func (p *Producer) Do() {
 			p.Amount -= value
 			p.Mutex.Unlock()
 			envelope := &model.Envelope{
-				EnvelopeId: xid.New().String(),
+				EnvelopeId: envelopeId,
 				Value:      value,
 				Opened:     false,
 				UserId:     "",
@@ -107,8 +112,8 @@ func (p *Producer) Do() {
 
 func envelopeIdToIndex(envelopeId string) int {
 	index := 0
-	for i := 0; i < randomMoneyBit; i++ {
-		index ^= (int(envelopeId[i]) & 1) << i
+	for i := 19; i > 20-randomMoneyBit; i-- {
+		index ^= (int(envelopeId[i]) & 1) << (19 - i)
 	}
 	return index
 }

@@ -2,12 +2,12 @@ package service
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,18 +40,41 @@ func TestProducer_do(t *testing.T) {
 }
 
 func Test_getRandomMoney(t *testing.T) {
-	testCount := 10
+	testCount := 1
 	amounts := make([]int64, testCount)
 	sizes := make([]int64, testCount)
+
 	rand.Seed(time.Now().UnixNano())
-	
+
 	for i := 0; i < testCount; i++ {
-		amounts[i] = rand.Int63n(math.MaxUint16)
-		sizes[i] = rand.Int63n(amounts[i])
+		amounts[i] = 6e7
+		sizes[i] = 6e4
 		t.Run(fmt.Sprintf("amount:%v size:%v", amounts[i], sizes[i]), func(t *testing.T) {
+			tmp := amounts[i] - 0.01*10000*sizes[i]
+			tmp2 := tmp - 0.3*2000*sizes[i]
+			tmp3 := float64(tmp2) / float64(sizes[i]) * 0.69
+			InitRandomMoney([]EnvelopeDistribute{
+				{
+					0.01,
+					10000,
+					10000,
+				},
+				{
+					0.3,
+					tmp2,
+					tmp2,
+				},
+				{
+					0.69,
+					int64(tmp3),
+					int64(tmp3),
+				},
+			})
 			beginAmount := amounts[i]
 			for {
-				money, ok := getRandomMoney(sizes[i], amounts[i], "c6576gjbu3ifgt3emvrg")
+				envelopeId := xid.New().String()
+				t.Log(envelopeId)
+				money, ok := getRandomMoney(sizes[i], amounts[i], envelopeId)
 				if !ok {
 					break
 				}
