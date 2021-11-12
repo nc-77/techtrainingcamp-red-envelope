@@ -17,6 +17,7 @@ func Validate() fiber.Handler {
 			return api.Response(c, api.ERRPARAM, "")
 		}
 		c.Locals("uid", user.Uid)
+		c.Locals("envelope_id", user.EnvelopeId)
 		return c.Next()
 	}
 }

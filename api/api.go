@@ -84,7 +84,7 @@ func Open(c *fiber.Ctx) error {
 	val, _ := app.UserMutex.LoadOrStore(uid, new(sync.Mutex))
 	mutex = val.(*sync.Mutex)
 	mutex.Lock()
-	if envelope, err = user.GetEnvelope(c.FormValue("envelope_id")); err != nil {
+	if envelope, err = user.GetEnvelope(c.Locals("envelope_id").(string)); err != nil {
 		return Response(c, FAILED, "")
 	}
 
