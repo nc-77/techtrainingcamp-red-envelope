@@ -6,7 +6,6 @@ import java.util.concurrent.Executors;
 import org.apache.log4j.Logger;
 
 
-///https://blog.csdn.net/younger_z/article/details/48932179
 public class TestSnatch {
 
     private static Logger log = Logger.getLogger(TestSnatch.class);
