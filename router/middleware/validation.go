@@ -16,7 +16,7 @@ func Validate() fiber.Handler {
 		if !checkUid(user.Uid) {
 			return api.Response(c, api.ERRPARAM, "")
 		}
-		c.Set("uid", user.Uid)
+		c.Locals("uid", user.Uid)
 		return c.Next()
 	}
 }

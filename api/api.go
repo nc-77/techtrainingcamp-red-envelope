@@ -20,7 +20,7 @@ var (
 
 func Snatch(c *fiber.Ctx) error {
 	var mutex *sync.Mutex
-	uid := c.Get("uid")
+	uid := c.Locals("uid").(string)
 	user := service.NewUser(uid)
 	defer func() {
 		mutex.Unlock()
@@ -76,7 +76,7 @@ func Open(c *fiber.Ctx) error {
 	var envelope *model.Envelope
 	var mutex *sync.Mutex
 	var err error
-	uid := c.Get("uid")
+	uid := c.Locals("uid").(string)
 	user := service.NewUser(uid)
 	defer func() {
 		mutex.Unlock()
@@ -114,7 +114,7 @@ func Open(c *fiber.Ctx) error {
 }
 
 func GetWalletList(c *fiber.Ctx) error {
-	uid := c.Get("uid")
+	uid := c.Locals("uid").(string)
 	user := service.NewUser(uid)
 	wallet, err := user.GetWallet()
 	if err != nil {
