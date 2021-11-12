@@ -27,7 +27,7 @@ POST	.../v0/snatch
 
 ```json
 {
-    "uid": "123" // 用户id string类型
+    "uid": "123" 							// 用户id string类型
 }
 ```
 
@@ -38,7 +38,7 @@ POST	.../v0/snatch
     "code": 0,
     "data": {
         "cur_count": 1,							// 当前第几次抢到
-        "enveloped_id": "c67479bbu3iato50giu0", // 红包id 
+        "enveloped_id": "c67479bbu3iato50giu0", 			// 红包id 
         "max_count": 10 						// 最多抢到次数
     },
     "msg": "success"
@@ -58,7 +58,7 @@ POST	.../v0/open
 ```json
 {
 	"uid": "123",							// 用户id，string类型
-    "envelope_id":"c67479bbu3iato50giu0"	// 红包id，string类型
+    "envelope_id":"c67479bbu3iato50giu0"				// 红包id，string类型
 }
 ```
 
