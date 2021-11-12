@@ -87,7 +87,7 @@ POST	.../v0/open
 
 POST	.../v0/get_wallet_list
 
-```
+```json
 {
     "uid": "123" // 用户id string类型
 }
