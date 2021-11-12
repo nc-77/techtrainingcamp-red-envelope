@@ -1,6 +1,7 @@
 package router
 
 import (
+	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"red_envelope/api"
 	"red_envelope/router/middleware"
 
@@ -10,6 +11,7 @@ import (
 
 func InitRouter() *fiber.App {
 	router := fiber.New()
+	router.Use(pprof.New())
 
 	v0 := router.Group("/v0")
 	v0.Use(cors.New(), middleware.Logger(), middleware.Validate(), middleware.Limiter())
