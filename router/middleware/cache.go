@@ -13,7 +13,7 @@ func Cache() fiber.Handler {
 		CacheHeader:  "X-Cache",
 		CacheControl: true,
 		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.FormValue("uid")
+			return c.Locals("uid").(string)
 		},
 	})
 }
