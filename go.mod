@@ -7,8 +7,8 @@ require (
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/gofiber/fiber/v2 v2.21.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/rs/xid v1.3.0
 	github.com/sirupsen/logrus v1.8.1
+	github.com/sony/sonyflake v1.0.0
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac
 )

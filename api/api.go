@@ -19,6 +19,7 @@ var (
 )
 
 func Snatch(c *fiber.Ctx) error {
+
 	var mutex *sync.Mutex
 	uid := c.Locals("uid").(string)
 	user := service.NewUser(uid)
