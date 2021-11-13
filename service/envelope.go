@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math"
 	"math/rand"
+	"strconv"
 	"sync"
 	"time"
 
@@ -11,26 +12,28 @@ import (
 	"red_envelope/utils"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
+	"github.com/sony/sonyflake"
 )
 
 type Producer struct {
-	Amount  int64
-	Size    int64
-	MaxLen  int64
-	Chan    chan *model.Envelope
-	MsgChan chan int // 启动消息通知
-	Mutex   sync.Mutex
+	Amount    int64
+	Size      int64
+	MaxLen    int64
+	Chan      chan *model.Envelope
+	MsgChan   chan int // 启动消息通知
+	Mutex     sync.Mutex
+	snowFlake *sonyflake.Sonyflake
 }
 
 func NewProducer(amount int64, size int64) *Producer {
 	return &Producer{
-		Amount:  amount,
-		Size:    size,
-		Chan:    make(chan *model.Envelope, utils.Min(math.MaxUint16, utils.Max(math.MaxInt16, size))),
-		MsgChan: make(chan int, 100),
-		Mutex:   sync.Mutex{},
+		Amount:    amount,
+		Size:      size,
+		Chan:      make(chan *model.Envelope, utils.Min(math.MaxUint16, utils.Max(math.MaxInt16, size))),
+		MsgChan:   make(chan int, 100),
+		Mutex:     sync.Mutex{},
+		snowFlake: sonyflake.NewSonyflake(sonyflake.Settings{}),
 	}
 }
 
@@ -58,8 +61,12 @@ func (p *Producer) Do() {
 			p.Size--
 			p.Amount -= value
 			p.Mutex.Unlock()
+			id, err := p.snowFlake.NextID()
+			if err != nil {
+				logrus.Error(err)
+			}
 			envelope := &model.Envelope{
-				EnvelopeId: xid.New().String(),
+				EnvelopeId: strconv.FormatUint(id, 10),
 				Value:      value,
 				Opened:     false,
 				UserId:     "",
